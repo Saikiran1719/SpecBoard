@@ -792,18 +792,34 @@ function restoreOriginal(){
   });
 }
 
+let quotaWarned = false;
+
 async function translateOne(text, lang){
-  // MyMemory limits ~500 chars per call. Keep short.
   if(text.length > 500) text = text.slice(0,500);
   try{
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${lang}`;
     const res = await fetch(url);
     const data = await res.json();
-    if(data && data.responseData && data.responseData.translatedText){
-      return data.responseData.translatedText;
+    const t = data?.responseData?.translatedText || '';
+    // API quota exceeded — it returns a warning string instead of a real translation
+    if(data?.responseStatus !== 200 || t.startsWith('MYMEMORY WARNING')){
+      if(!quotaWarned){
+        quotaWarned = true;
+        showToast('Translation quota reached — try again tomorrow');
+      }
+      return text; // keep original
     }
+    if(t) return t;
   }catch(e){console.warn('translation failed for', text, e)}
   return text;
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4200);
 }
 
 /* ============================================================
