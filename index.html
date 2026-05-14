@@ -1480,13 +1480,30 @@ function openPinGate(callback){
 
   function enterKiosk(){
     document.body.classList.add('kiosk');
-    showToast('Kiosk mode on');
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if(req) req.call(el).catch(() => {});
+    showToast('Kiosk mode on — press Exit Kiosk to leave');
   }
 
   function exitKiosk(){
     document.body.classList.remove('kiosk');
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if(exit && (document.fullscreenElement || document.webkitFullscreenElement)) exit.call(document).catch(() => {});
     showToast('Kiosk mode off');
   }
+
+  // Sync if user presses Escape to exit fullscreen externally
+  document.addEventListener('fullscreenchange', () => {
+    if(!document.fullscreenElement && document.body.classList.contains('kiosk')){
+      document.body.classList.remove('kiosk');
+    }
+  });
+  document.addEventListener('webkitfullscreenchange', () => {
+    if(!document.webkitFullscreenElement && document.body.classList.contains('kiosk')){
+      document.body.classList.remove('kiosk');
+    }
+  });
 
   kioskBtn.addEventListener('click', () => {
     const pin = localStorage.getItem('mmPin') || '';
