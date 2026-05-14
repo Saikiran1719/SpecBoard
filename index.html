@@ -401,6 +401,112 @@
     .chip{padding:10px 12px;font-size:11px}
   }
 
+  /* ====== COMPARE ====== */
+  .chip-wrap{display:flex;align-items:stretch}
+  .chip-cmp{
+    font-family:var(--mono);font-size:14px;line-height:1;
+    padding:0 11px;border:1px solid var(--ink);border-left:none;
+    background:#fff;color:var(--muted);cursor:pointer;transition:.15s;flex-shrink:0;
+  }
+  .chip-cmp:hover{background:var(--paper-2);color:var(--ink)}
+  .chip-cmp.in-cmp{background:var(--hi);color:#fff;border-color:var(--hi)}
+  .chip-wrap .chip{border-radius:0}
+  .cmp-bar{
+    display:none;background:var(--hi);color:#fff;
+    padding:11px 18px;margin-bottom:20px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    align-items:center;justify-content:space-between;gap:16px;
+  }
+  .cmp-bar.visible{display:flex}
+  .cmp-clear{background:none;border:1px solid rgba(255,255,255,.45);color:#fff;
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    padding:6px 12px;cursor:pointer;}
+  .cmp-clear:hover{border-color:#fff}
+  .cmp-go{background:#fff;color:var(--hi);border:none;
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:7px 16px;cursor:pointer;font-weight:600;}
+  .cmp-go:hover{background:var(--paper)}
+
+  /* compare full-screen overlay */
+  #compareModal{
+    position:fixed;inset:0;z-index:250;
+    background:var(--paper);overflow-y:auto;
+    opacity:0;pointer-events:none;
+    transition:opacity .2s;
+  }
+  #compareModal.open{opacity:1;pointer-events:auto}
+  .cmp-top{
+    position:sticky;top:0;background:var(--ink);color:var(--paper);z-index:10;
+    padding:13px 22px;display:flex;align-items:center;justify-content:space-between;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  }
+  .cmp-top-close{
+    background:none;border:1px solid var(--line-2);color:var(--paper);
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    padding:7px 14px;cursor:pointer;
+  }
+  .cmp-top-close:hover{background:#222835}
+  .cmp-wrap{padding:28px 22px;max-width:1400px;margin:0 auto;overflow-x:auto}
+  .cmp-tbl{width:100%;border-collapse:collapse;border:1px solid var(--ink)}
+  .cmp-tbl th{
+    background:var(--ink);color:var(--paper);
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    padding:14px 18px;text-align:left;border:1px solid var(--line-2);min-width:180px;
+  }
+  .cmp-tbl th:first-child{min-width:160px;background:var(--ink-2)}
+  .cmp-tbl td{padding:13px 18px;border:1px solid var(--line);background:#fff;
+    font-family:var(--serif);font-size:16px;vertical-align:middle}
+  .cmp-tbl td:first-child{
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);background:var(--paper-2);
+  }
+  .cmp-tbl tr.diff td{background:#fffaf7}
+  .cmp-tbl tr.diff td:first-child{background:#fff0e8}
+  .cmp-tbl .na{color:var(--muted);font-style:italic;font-size:14px;font-family:var(--sans)}
+
+  /* ====== LEAD CAPTURE ====== */
+  .req-info-btn{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    padding:8px 16px;border:1px solid var(--hi);background:transparent;color:var(--hi);
+    cursor:pointer;transition:.15s;
+  }
+  .req-info-btn:hover{background:var(--hi);color:#fff}
+  .leads-badge{
+    display:inline-block;background:var(--hi);color:#fff;
+    font-family:var(--mono);font-size:9px;padding:1px 5px;margin-left:4px;vertical-align:middle;
+  }
+  #leadFormModal,#leadsModal{
+    position:fixed;inset:0;z-index:350;background:rgba(13,17,23,.8);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .18s;
+  }
+  #leadFormModal.open,#leadsModal.open{opacity:1;pointer-events:auto}
+  #leadFormModal .box{
+    background:var(--paper);border:1px solid var(--ink);box-shadow:8px 8px 0 var(--ink);
+    padding:30px;width:min(480px,94vw);max-height:92vh;overflow-y:auto;
+  }
+  #leadFormModal h2{font-family:var(--serif);font-size:21px;font-weight:500;margin:0 0 4px}
+  .lf-prod{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--hi);margin-bottom:20px;display:block}
+  .lf-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;display:block}
+  .lf-label:first-of-type{margin-top:0}
+  .lf-req{color:var(--hi)}
+  .lf-input,.lf-ta{width:100%;font-family:var(--sans);font-size:14px;padding:10px 12px;border:1px solid var(--ink);background:#fff;color:var(--ink);outline:none}
+  .lf-input:focus,.lf-ta:focus{border-color:var(--hi);box-shadow:3px 3px 0 var(--hi)}
+  .lf-ta{resize:vertical;min-height:70px}
+  #leadsModal .box{
+    background:var(--paper);border:1px solid var(--ink);box-shadow:8px 8px 0 var(--ink);
+    width:min(920px,96vw);max-height:92vh;display:flex;flex-direction:column;
+  }
+  .leads-head{padding:18px 22px;border-bottom:1px solid var(--ink);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .leads-head h2{font-family:var(--serif);font-size:20px;font-weight:500;margin:0}
+  .leads-body{overflow-y:auto;flex:1}
+  .leads-foot{padding:12px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;background:var(--paper)}
+  .leads-tbl{width:100%;border-collapse:collapse}
+  .leads-tbl th{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:10px 14px;text-align:left;position:sticky;top:0}
+  .leads-tbl td{padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px}
+  .leads-tbl tr:hover td{background:rgba(255,91,31,.04)}
+  .no-leads{padding:40px;text-align:center;color:var(--muted);font-style:italic;font-family:var(--serif);font-size:17px}
+
   @media print{
     header,.slicer{display:none}
     .product{box-shadow:none;break-inside:avoid}
@@ -449,6 +555,7 @@
         <option value="ms">MS · Bahasa Melayu</option>
         <option value="sw">SW · Kiswahili</option>
       </select>
+      <button class="btn" id="leadsBtn" style="display:none">Leads</button>
       <button class="btn" id="keyBtn">API Key</button>
       <button class="btn" id="printBtn" disabled>Print</button>
       <button class="btn primary" id="newBtn" disabled>New File</button>
@@ -489,6 +596,13 @@
   <section id="viewer" style="display:none">
     <div class="slicer" id="slicer">
       <div class="label" data-i18n>Select Product</div>
+    </div>
+    <div class="cmp-bar" id="cmpBar">
+      <span id="cmpCount"></span>
+      <div style="display:flex;gap:10px">
+        <button class="cmp-clear" id="cmpClear">Clear</button>
+        <button class="cmp-go" id="cmpGo">Compare →</button>
+      </div>
     </div>
     <div id="productHost"></div>
   </section>
@@ -534,6 +648,52 @@
   </div>
 </div>
 
+<!-- LEAD FORM MODAL -->
+<div id="leadFormModal">
+  <div class="box">
+    <h2>Request Information</h2>
+    <span class="lf-prod" id="lfProdName"></span>
+    <label class="lf-label"><span class="lf-req">*</span> Name</label>
+    <input class="lf-input" id="lfName" type="text" placeholder="Your name" autocomplete="name">
+    <label class="lf-label"><span class="lf-req">*</span> Email</label>
+    <input class="lf-input" id="lfEmail" type="email" placeholder="your@email.com" autocomplete="email">
+    <label class="lf-label">Company</label>
+    <input class="lf-input" id="lfCompany" type="text" placeholder="Company name" autocomplete="organization">
+    <label class="lf-label">Phone</label>
+    <input class="lf-input" id="lfPhone" type="tel" placeholder="+1 555 000 0000" autocomplete="tel">
+    <label class="lf-label">Message</label>
+    <textarea class="lf-ta" id="lfMsg" placeholder="Any specific questions or requirements…"></textarea>
+    <div class="modal-row" style="margin-top:20px">
+      <button class="btn" id="lfCancel" style="color:var(--ink);border-color:var(--line-2)">Cancel</button>
+      <button class="btn primary" id="lfSubmit">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEADS VIEW MODAL -->
+<div id="leadsModal">
+  <div class="box">
+    <div class="leads-head">
+      <h2>Leads</h2>
+      <button class="btn" id="leadsClose" style="color:var(--ink);border-color:var(--line-2)">✕ Close</button>
+    </div>
+    <div class="leads-body" id="leadsBody"></div>
+    <div class="leads-foot">
+      <button class="btn" id="leadsClearAll" style="color:var(--hi);border-color:var(--hi)">Clear All</button>
+      <button class="btn primary" id="leadsExport">Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARE MODAL -->
+<div id="compareModal">
+  <div class="cmp-top">
+    <span>Product Comparison</span>
+    <button class="cmp-top-close" id="cmpClose">✕ Close</button>
+  </div>
+  <div class="cmp-wrap"><div id="cmpTableHost"></div></div>
+</div>
+
 <div id="imgZoom">
   <img id="imgZoomImg" src="" alt="">
   <button class="zm-close" id="imgZoomClose">✕ Close</button>
@@ -544,11 +704,13 @@
    STATE
    ============================================================ */
 const state = {
-  products: [],     // [{name, specs:[{k,v}], dim:imgDataUrl, curve:imgDataUrl, source:fileName}]
+  products: [],
   active: 0,
   currentLang: 'en',
-  origCache: new WeakMap(),  // dom node -> original english text
-  fileNames: []
+  origCache: new WeakMap(),
+  fileNames: [],
+  compareSet: new Set(),
+  leads: JSON.parse(localStorage.getItem('sbLeads') || '[]')
 };
 
 const $ = s => document.querySelector(s);
@@ -580,6 +742,8 @@ $('#newBtn').addEventListener('click', () => {
   $('#metaStrip').textContent = ' · awaiting file';
   state.products = [];
   state.fileNames = [];
+  state.compareSet.clear();
+  $('#leadsBtn').style.display = 'none';
 });
 
 $('#printBtn').addEventListener('click', () => window.print());
@@ -733,6 +897,7 @@ function showViewer(){
   $('#viewer').style.display = 'block';
   $('#printBtn').disabled = false;
   $('#newBtn').disabled = false;
+  syncLeadsBtn();
   const fCount = state.fileNames.length;
   const pCount = state.products.length;
   $('#metaStrip').textContent = (fCount > 1 ? fCount + ' files' : state.fileNames[0] || 'file') + ' · ' + pCount + ' product' + (pCount > 1 ? 's' : '') + ' detected';
@@ -741,12 +906,22 @@ function showViewer(){
   const slicer = $('#slicer');
   slicer.innerHTML = '<div class="label" data-i18n>Select Product</div>';
   state.products.forEach((p,i) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'chip-wrap';
     const b = document.createElement('button');
     b.className = 'chip' + (i === state.active ? ' active' : '');
     b.innerHTML = (i === state.active ? '<span class="dot"></span>' : '') + escapeHtml(p.name);
-    b.onclick = () => {state.active = i; showViewer(); maybeTranslate()};
-    slicer.appendChild(b);
+    b.onclick = () => { state.active = i; showViewer(); maybeTranslate(); };
+    const cmpBtn = document.createElement('button');
+    cmpBtn.className = 'chip-cmp' + (state.compareSet.has(i) ? ' in-cmp' : '');
+    cmpBtn.title = 'Add to compare';
+    cmpBtn.textContent = state.compareSet.has(i) ? '✓' : '+';
+    cmpBtn.onclick = () => toggleCompare(i, cmpBtn);
+    wrap.appendChild(b);
+    wrap.appendChild(cmpBtn);
+    slicer.appendChild(wrap);
   });
+  syncCmpBar();
 
   renderProduct();
   // re-apply translation if not english
@@ -812,6 +987,7 @@ function renderProduct(){
       <div class="footer">
         <div class="ts"><span data-i18n>Generated</span> · <b>${ts}</b></div>
         <div class="ts"><span data-i18n>Source</span> · <b>${escapeHtml(p.source || state.fileNames[0] || '')}</b></div>
+        <button class="req-info-btn" id="reqInfoBtn">Request Info</button>
       </div>
     </article>
   `;
@@ -982,10 +1158,7 @@ function showToast(msg){
   /* --- open flow --- */
   keyBtn.addEventListener('click', () => {
     if(storedPin){
-      pinInput.value = '';
-      pinError.textContent = '';
-      pinModal.classList.add('open');
-      setTimeout(() => pinInput.focus(), 80);
+      openPinGate(() => openKeyModal());
     } else {
       openKeyModal();
     }
@@ -1008,7 +1181,7 @@ function showToast(msg){
       pinModal.classList.remove('open');
       pinInput.value = '';
       pinError.textContent = '';
-      openKeyModal();
+      if(_pinCallback){ _pinCallback(); _pinCallback = null; }
     } else {
       pinError.textContent = 'Incorrect PIN';
       pinInput.value = '';
@@ -1060,6 +1233,188 @@ function showToast(msg){
     }
   });
 })();
+
+/* ============================================================
+   COMPARE
+   ============================================================ */
+function toggleCompare(idx, btn){
+  if(state.compareSet.has(idx)){
+    state.compareSet.delete(idx);
+    btn.classList.remove('in-cmp');
+    btn.textContent = '+';
+  } else {
+    if(state.compareSet.size >= 4){ showToast('Max 4 products for comparison'); return; }
+    state.compareSet.add(idx);
+    btn.classList.add('in-cmp');
+    btn.textContent = '✓';
+  }
+  syncCmpBar();
+}
+
+function syncCmpBar(){
+  const n = state.compareSet.size;
+  const bar = $('#cmpBar');
+  if(n >= 2){
+    bar.classList.add('visible');
+    $('#cmpCount').textContent = n + ' products selected';
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+$('#cmpClear').addEventListener('click', () => {
+  state.compareSet.clear();
+  syncCmpBar();
+  $$('.chip-cmp').forEach(b => { b.classList.remove('in-cmp'); b.textContent = '+'; });
+});
+
+$('#cmpGo').addEventListener('click', renderCompare);
+$('#cmpClose').addEventListener('click', () => $('#compareModal').classList.remove('open'));
+
+function renderCompare(){
+  const products = [...state.compareSet].map(i => state.products[i]);
+  // collect all unique spec keys in order of first appearance
+  const keyOrder = [];
+  const keySet = new Set();
+  products.forEach(p => p.specs.forEach(s => { if(!keySet.has(s.k)){ keySet.add(s.k); keyOrder.push(s.k); } }));
+
+  const specMap = products.map(p => Object.fromEntries(p.specs.map(s => [s.k, s.v])));
+
+  let html = `<table class="cmp-tbl"><thead><tr><th>Specification</th>`;
+  products.forEach(p => { html += `<th>${escapeHtml(p.name)}</th>`; });
+  html += `</tr></thead><tbody>`;
+
+  keyOrder.forEach(k => {
+    const vals = specMap.map(m => m[k] || null);
+    const unique = new Set(vals.filter(Boolean));
+    const isDiff = unique.size > 1 || vals.some(v => v === null);
+    html += `<tr${isDiff ? ' class="diff"' : ''}>`;
+    html += `<td>${escapeHtml(k)}</td>`;
+    vals.forEach(v => { html += `<td>${v ? escapeHtml(v) : '<span class="na">—</span>'}</td>`; });
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  $('#cmpTableHost').innerHTML = html;
+  $('#compareModal').classList.add('open');
+}
+
+/* ============================================================
+   LEAD CAPTURE
+   ============================================================ */
+function syncLeadsBtn(){
+  const btn = $('#leadsBtn');
+  btn.style.display = '';
+  const n = state.leads.length;
+  btn.innerHTML = 'Leads' + (n ? ` <span class="leads-badge">${n}</span>` : '');
+}
+
+// Open lead form when Request Info clicked
+$('#productHost').addEventListener('click', e => {
+  if(!e.target.closest('#reqInfoBtn')) return;
+  const p = state.products[state.active];
+  $('#lfProdName').textContent = p.name;
+  $('#lfName').value = '';
+  $('#lfEmail').value = '';
+  $('#lfCompany').value = '';
+  $('#lfPhone').value = '';
+  $('#lfMsg').value = '';
+  $('#leadFormModal').classList.add('open');
+  setTimeout(() => $('#lfName').focus(), 80);
+});
+
+$('#lfCancel').addEventListener('click', () => $('#leadFormModal').classList.remove('open'));
+$('#leadFormModal').addEventListener('click', e => { if(e.target === $('#leadFormModal')) $('#leadFormModal').classList.remove('open'); });
+
+$('#lfSubmit').addEventListener('click', () => {
+  const name  = $('#lfName').value.trim();
+  const email = $('#lfEmail').value.trim();
+  if(!name || !email){ showToast('Name and email are required'); return; }
+  const lead = {
+    id: Date.now(),
+    product:  $('#lfProdName').textContent,
+    name, email,
+    company:  $('#lfCompany').value.trim(),
+    phone:    $('#lfPhone').value.trim(),
+    message:  $('#lfMsg').value.trim(),
+    ts: new Date().toLocaleString('en-GB')
+  };
+  state.leads.push(lead);
+  localStorage.setItem('sbLeads', JSON.stringify(state.leads));
+  $('#leadFormModal').classList.remove('open');
+  syncLeadsBtn();
+  showToast('Thank you! Your request has been saved.');
+});
+
+// Leads view — also PIN-gated
+$('#leadsBtn').addEventListener('click', () => {
+  const storedPin = localStorage.getItem('mmPin') || '';
+  if(storedPin){
+    openPinGate(() => openLeadsModal());
+  } else {
+    openLeadsModal();
+  }
+});
+
+function openLeadsModal(){
+  renderLeadsTable();
+  $('#leadsModal').classList.add('open');
+}
+
+function renderLeadsTable(){
+  const body = $('#leadsBody');
+  if(!state.leads.length){
+    body.innerHTML = '<div class="no-leads">No leads yet — visitors who tap Request Info will appear here.</div>';
+    return;
+  }
+  body.innerHTML = `<table class="leads-tbl">
+    <thead><tr><th>Product</th><th>Name</th><th>Email</th><th>Company</th><th>Phone</th><th>Message</th><th>Date</th></tr></thead>
+    <tbody>
+      ${state.leads.map(l => `<tr>
+        <td>${escapeHtml(l.product)}</td>
+        <td>${escapeHtml(l.name)}</td>
+        <td>${escapeHtml(l.email)}</td>
+        <td>${escapeHtml(l.company||'')}</td>
+        <td>${escapeHtml(l.phone||'')}</td>
+        <td>${escapeHtml(l.message||'')}</td>
+        <td style="white-space:nowrap">${escapeHtml(l.ts)}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+$('#leadsClose').addEventListener('click', () => $('#leadsModal').classList.remove('open'));
+$('#leadsModal').addEventListener('click', e => { if(e.target === $('#leadsModal')) $('#leadsModal').classList.remove('open'); });
+
+$('#leadsClearAll').addEventListener('click', () => {
+  if(!confirm('Delete all ' + state.leads.length + ' leads? This cannot be undone.')) return;
+  state.leads = [];
+  localStorage.removeItem('sbLeads');
+  syncLeadsBtn();
+  renderLeadsTable();
+});
+
+$('#leadsExport').addEventListener('click', () => {
+  if(!state.leads.length){ showToast('No leads to export'); return; }
+  const cols = ['product','name','email','company','phone','message','ts'];
+  const header = ['Product','Name','Email','Company','Phone','Message','Date'];
+  const csv = [header, ...state.leads.map(l => cols.map(c => `"${(l[c]||'').replace(/"/g,'""')}"`))].map(r => r.join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'specboard-leads-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+});
+
+/* shared PIN gate used by both API Key and Leads buttons */
+let _pinCallback = null;
+function openPinGate(callback){
+  _pinCallback = callback;
+  const pinInput = $('#pinInput');
+  const pinError = $('#pinError');
+  pinInput.value = '';
+  pinError.textContent = '';
+  $('#pinModal').classList.add('open');
+  setTimeout(() => pinInput.focus(), 80);
+}
 
 /* ============================================================
    IMAGE LIGHTBOX  (button-triggered)
