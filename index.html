@@ -511,6 +511,49 @@
     header,.slicer{display:none}
     .product{box-shadow:none;break-inside:avoid}
   }
+
+  /* ====== KIOSK MODE ====== */
+  .kiosk-exit{
+    display:none;margin-left:auto;
+    font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    padding:7px 14px;border:1px solid rgba(246,244,238,.25);background:transparent;
+    color:rgba(246,244,238,.55);cursor:pointer;transition:.15s;
+  }
+  .kiosk-exit:hover{color:var(--paper);border-color:rgba(246,244,238,.7)}
+  body.kiosk .kiosk-exit{display:block}
+  body.kiosk header .right{display:none}
+  body.kiosk #metaStrip{display:none}
+  body.kiosk .footer{display:none}
+  body.kiosk .chip-cmp{display:none}
+  body.kiosk #cmpBar{display:none !important}
+  body.kiosk main.stage{padding-bottom:96px}
+  body.kiosk .chip{font-size:15px;padding:15px 24px}
+  body.kiosk .slicer{padding-bottom:36px;gap:14px}
+
+  #kioskBar{
+    display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;
+    background:var(--ink);border-top:3px solid var(--hi);
+    padding:14px 24px;
+    justify-content:space-between;align-items:center;gap:16px;
+  }
+  body.kiosk #kioskBar{display:flex}
+  #kioskBarLabel{
+    font-family:var(--serif);font-style:italic;font-size:17px;
+    color:rgba(246,244,238,.65);letter-spacing:-.1px;flex:1;min-width:0;
+  }
+  #kioskBarLabel b{font-style:normal;font-weight:600;color:var(--paper)}
+  #kioskReqBtn{
+    flex-shrink:0;
+    font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+    padding:14px 34px;background:var(--hi);color:#fff;border:none;cursor:pointer;transition:.15s;
+  }
+  #kioskReqBtn:hover{background:#e54d10}
+  @media(max-width:600px){
+    #kioskBar{padding:12px 14px;gap:10px}
+    #kioskBarLabel{font-size:14px}
+    #kioskReqBtn{padding:12px 20px;font-size:12px;letter-spacing:.1em}
+    body.kiosk .chip{font-size:13px;padding:13px 18px}
+  }
 </style>
 </head>
 <body>
@@ -519,6 +562,7 @@
   <div class="bar">
     <div class="logo"><b></b><span style="opacity:.55">·</span><i>SpecBoard</i></div>
     <div class="meta" id="metaStrip"> · awaiting file</div>
+    <button class="kiosk-exit" id="kioskExit">Exit Kiosk</button>
     <div class="right">
       <select class="btn" id="lang">
         <option value="en">EN · English</option>
@@ -557,6 +601,7 @@
       </select>
       <button class="btn" id="leadsBtn" style="display:none">Leads</button>
       <button class="btn" id="keyBtn">API Key</button>
+      <button class="btn" id="kioskBtn" disabled>Kiosk</button>
       <button class="btn" id="printBtn" disabled>Print</button>
       <button class="btn primary" id="newBtn" disabled>New File</button>
     </div>
@@ -694,6 +739,11 @@
   <div class="cmp-wrap"><div id="cmpTableHost"></div></div>
 </div>
 
+<div id="kioskBar">
+  <span id="kioskBarLabel">Interested in this product?</span>
+  <button id="kioskReqBtn">Request Information</button>
+</div>
+
 <div id="imgZoom">
   <img id="imgZoomImg" src="" alt="">
   <button class="zm-close" id="imgZoomClose">✕ Close</button>
@@ -735,10 +785,12 @@ fileInput.addEventListener('change', e => {
 });
 
 $('#newBtn').addEventListener('click', () => {
+  document.body.classList.remove('kiosk');
   $('#viewer').style.display = 'none';
   $('#drop').style.display = 'block';
   $('#printBtn').disabled = true;
   $('#newBtn').disabled = true;
+  $('#kioskBtn').disabled = true;
   $('#metaStrip').textContent = ' · awaiting file';
   state.products = [];
   state.fileNames = [];
@@ -897,6 +949,7 @@ function showViewer(){
   $('#viewer').style.display = 'block';
   $('#printBtn').disabled = false;
   $('#newBtn').disabled = false;
+  $('#kioskBtn').disabled = false;
   syncLeadsBtn();
   const fCount = state.fileNames.length;
   const pCount = state.products.length;
@@ -934,6 +987,8 @@ function renderProduct(){
   const p = state.products[state.active];
   const host = $('#productHost');
   const ts = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const barLabel = $('#kioskBarLabel');
+  if(barLabel) barLabel.innerHTML = `Interested in <b>${escapeHtml(p.name)}</b>?`;
 
   host.innerHTML = `
     <article class="product">
@@ -1415,6 +1470,50 @@ function openPinGate(callback){
   $('#pinModal').classList.add('open');
   setTimeout(() => pinInput.focus(), 80);
 }
+
+/* ============================================================
+   KIOSK MODE
+   ============================================================ */
+(function(){
+  const kioskBtn  = $('#kioskBtn');
+  const kioskExit = $('#kioskExit');
+
+  function enterKiosk(){
+    document.body.classList.add('kiosk');
+    showToast('Kiosk mode on');
+  }
+
+  function exitKiosk(){
+    document.body.classList.remove('kiosk');
+    showToast('Kiosk mode off');
+  }
+
+  kioskBtn.addEventListener('click', () => {
+    const pin = localStorage.getItem('mmPin') || '';
+    if(pin) openPinGate(() => enterKiosk());
+    else     enterKiosk();
+  });
+
+  kioskExit.addEventListener('click', () => {
+    const pin = localStorage.getItem('mmPin') || '';
+    if(pin) openPinGate(() => exitKiosk());
+    else     exitKiosk();
+  });
+
+  // Kiosk bottom-bar Request Info button — reuse the same lead form
+  $('#kioskReqBtn').addEventListener('click', () => {
+    const p = state.products[state.active];
+    if(!p) return;
+    $('#lfProdName').textContent = p.name;
+    $('#lfName').value = '';
+    $('#lfEmail').value = '';
+    $('#lfCompany').value = '';
+    $('#lfPhone').value = '';
+    $('#lfMsg').value = '';
+    $('#leadFormModal').classList.add('open');
+    setTimeout(() => $('#lfName').focus(), 80);
+  });
+})();
 
 /* ============================================================
    IMAGE LIGHTBOX  (button-triggered)
