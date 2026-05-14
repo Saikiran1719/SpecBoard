@@ -520,39 +520,107 @@
     color:rgba(246,244,238,.55);cursor:pointer;transition:.15s;
   }
   .kiosk-exit:hover{color:var(--paper);border-color:rgba(246,244,238,.7)}
+
+  /* --- Kiosk active state: lock entire page to viewport, no scroll ever --- */
+  body.kiosk{overflow:hidden;height:100vh;display:flex;flex-direction:column}
+  body.kiosk header{flex-shrink:0}
   body.kiosk .kiosk-exit{display:block}
   body.kiosk header .right{display:none}
   body.kiosk #metaStrip{display:none}
   body.kiosk .footer{display:none}
   body.kiosk .chip-cmp{display:none}
   body.kiosk #cmpBar{display:none !important}
-  body.kiosk main.stage{padding-bottom:96px}
-  body.kiosk .chip{font-size:15px;padding:15px 24px}
-  body.kiosk .slicer{padding-bottom:36px;gap:14px}
 
+  /* Stage becomes a flex column that fills the remaining viewport */
+  body.kiosk main.stage{
+    flex:1;min-height:0;overflow:hidden;
+    display:flex;flex-direction:column;
+    padding:10px 18px 68px; /* 68px = kiosk bar height */
+    margin:0;max-width:none;
+  }
+
+  /* Viewer fills stage */
+  body.kiosk #viewer{
+    flex:1;min-height:0;overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+
+  /* Slicer: single row, hide scrollbar, chips slightly smaller */
+  body.kiosk .slicer{
+    flex-shrink:0;padding:6px 0 8px;margin-bottom:8px;
+    overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;
+    border-bottom:1px solid var(--line);
+    scrollbar-width:none;
+  }
+  body.kiosk .slicer::-webkit-scrollbar{display:none}
+  body.kiosk .chip{font-size:13px;padding:10px 16px}
+
+  /* Product host fills remaining viewer height */
+  body.kiosk #productHost{flex:1;min-height:0;overflow:hidden}
+
+  /* Product card fills host exactly */
+  body.kiosk .product{
+    height:100%;overflow:hidden;
+    padding:12px 16px;gap:12px;
+    grid-template-rows:auto 1fr;
+    box-shadow:5px 5px 0 var(--ink);
+  }
+  body.kiosk .head{padding-bottom:8px;margin-bottom:0}
+  body.kiosk .head .name{font-size:clamp(18px,2.8vw,34px);letter-spacing:-.5px}
+
+  /* Visuals column: images shrunk to fit */
+  body.kiosk .visuals{gap:8px;overflow:hidden}
+  body.kiosk .vbox{padding:8px;min-height:0}
+  body.kiosk .vbox h4{margin-bottom:6px}
+  body.kiosk .vbox .imgwrap{min-height:50px}
+  body.kiosk .vbox img{max-height:clamp(60px,13vh,120px);width:auto}
+
+  /* Specs column: flex column, grid scrolls internally with no visible scrollbar */
+  body.kiosk .specs{display:flex;flex-direction:column;overflow:hidden;height:100%}
+  body.kiosk .specs h3{flex-shrink:0;font-size:15px;margin-bottom:8px}
+  body.kiosk .grid{
+    flex:1;min-height:0;overflow-y:auto;
+    scrollbar-width:none;
+  }
+  body.kiosk .grid::-webkit-scrollbar{display:none}
+  body.kiosk .cell{padding:8px 10px}
+  body.kiosk .cell .k{font-size:9px;margin-bottom:2px}
+  body.kiosk .cell .v{font-size:clamp(13px,1.4vw,20px)}
+
+  /* Kiosk bottom bar */
   #kioskBar{
     display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;
     background:var(--ink);border-top:3px solid var(--hi);
-    padding:14px 24px;
+    padding:12px 24px;height:68px;
     justify-content:space-between;align-items:center;gap:16px;
   }
   body.kiosk #kioskBar{display:flex}
   #kioskBarLabel{
-    font-family:var(--serif);font-style:italic;font-size:17px;
+    font-family:var(--serif);font-style:italic;font-size:16px;
     color:rgba(246,244,238,.65);letter-spacing:-.1px;flex:1;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   #kioskBarLabel b{font-style:normal;font-weight:600;color:var(--paper)}
   #kioskReqBtn{
     flex-shrink:0;
     font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
-    padding:14px 34px;background:var(--hi);color:#fff;border:none;cursor:pointer;transition:.15s;
+    padding:12px 32px;background:var(--hi);color:#fff;border:none;cursor:pointer;transition:.15s;
   }
   #kioskReqBtn:hover{background:#e54d10}
+
   @media(max-width:600px){
-    #kioskBar{padding:12px 14px;gap:10px}
-    #kioskBarLabel{font-size:14px}
-    #kioskReqBtn{padding:12px 20px;font-size:12px;letter-spacing:.1em}
-    body.kiosk .chip{font-size:13px;padding:13px 18px}
+    body.kiosk main.stage{padding:8px 12px 62px}
+    #kioskBar{padding:10px 14px;height:62px;gap:10px}
+    #kioskBarLabel{font-size:13px}
+    #kioskReqBtn{padding:10px 18px;font-size:11px;letter-spacing:.1em}
+    body.kiosk .chip{font-size:12px;padding:9px 12px}
+    body.kiosk .head .name{font-size:20px}
+    body.kiosk .cell .v{font-size:13px}
+    body.kiosk .vbox img{max-height:clamp(50px,10vh,90px)}
+  }
+  @media(max-width:390px){
+    body.kiosk .head .name{font-size:17px}
+    body.kiosk .cell{padding:6px 8px}
   }
 </style>
 </head>
