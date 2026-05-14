@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spec Viewer · Exhibition</title>
+
+<!-- SheetJS for parsing .xlsx -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- JSZip for extracting embedded images from .xlsx -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#0d1117;
+    --ink-2:#1a1f29;
+    --paper:#f6f4ee;
+    --paper-2:#ecebe2;
+    --line:#cbc8b8;
+    --line-2:#2a2f3a;
+    --hi:#ff5b1f;       /* safety orange */
+    --hi-2:#ffd166;     /* signal yellow */
+    --muted:#6e6a5b;
+    --ok:#1c7c54;
+    --serif:"IBM Plex Serif",serif;
+    --sans:"IBM Plex Sans",sans-serif;
+    --mono:"IBM Plex Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{
+    background:
+      radial-gradient(circle at 10% -10%, rgba(255,91,31,.06), transparent 40%),
+      radial-gradient(circle at 110% 10%, rgba(13,17,23,.05), transparent 50%),
+      linear-gradient(var(--paper),var(--paper-2));
+    min-height:100vh;
+  }
+
+  /* ====== TOP BAR ====== */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:var(--ink);color:var(--paper);
+    border-bottom:1px solid var(--line-2);
+  }
+  .bar{
+    display:flex;align-items:center;gap:18px;
+    padding:14px 22px;max-width:1700px;margin:0 auto;
+  }
+  .logo{
+    font-family:var(--serif);font-style:italic;font-weight:500;
+    font-size:22px;letter-spacing:.2px;
+  }
+  .logo b{font-style:normal;font-weight:700;color:var(--hi)}
+  .meta{
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:#9aa1ad;
+    padding-left:18px;border-left:1px solid var(--line-2);
+  }
+  .right{margin-left:auto;display:flex;gap:10px;align-items:center}
+  .btn{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;
+    padding:10px 14px;border:1px solid var(--line-2);background:transparent;
+    color:var(--paper);cursor:pointer;transition:.15s;
+  }
+  .btn:hover{background:#222835}
+  .btn.primary{background:var(--hi);color:#fff;border-color:var(--hi)}
+  .btn.primary:hover{background:#e54d10}
+  select.btn{padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--paper) 50%),linear-gradient(135deg,var(--paper) 50%,transparent 50%);background-position:calc(100% - 14px) 50%,calc(100% - 9px) 50%;background-size:5px 5px;background-repeat:no-repeat;-webkit-appearance:none;appearance:none}
+  select.btn option{background:var(--ink);color:var(--paper)}
+
+  /* ====== UPLOAD STATE ====== */
+  .stage{max-width:1700px;margin:0 auto;padding:40px 22px 80px}
+  .drop{
+    border:2px dashed var(--line);background:rgba(255,255,255,.4);
+    padding:80px 30px;text-align:center;
+    transition:.2s;
+  }
+  .drop.over{background:rgba(255,91,31,.07);border-color:var(--hi)}
+  .drop h1{
+    font-family:var(--serif);font-weight:500;font-size:46px;
+    margin:0 0 8px;letter-spacing:-.5px;
+  }
+  .drop h1 em{color:var(--hi);font-style:italic}
+  .drop p{color:var(--muted);max-width:560px;margin:6px auto 28px;line-height:1.55}
+  .drop .ftype{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:18px}
+  .drop input{display:none}
+  .drop label.upload{
+    display:inline-block;cursor:pointer;
+    background:var(--ink);color:var(--paper);
+    padding:14px 26px;font-family:var(--mono);font-size:13px;
+    letter-spacing:.16em;text-transform:uppercase;
+  }
+  .drop label.upload:hover{background:var(--hi)}
+
+  .hint{
+    margin-top:30px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  }
+  .hint .h{
+    background:#fff;border:1px solid var(--line);padding:18px;
+  }
+  .hint .h .n{font-family:var(--mono);font-size:11px;color:var(--hi);letter-spacing:.2em}
+  .hint .h .t{font-family:var(--serif);font-size:18px;margin:6px 0 4px}
+  .hint .h .d{font-size:13px;color:var(--muted);line-height:1.5}
+
+  /* ====== VIEWER STATE ====== */
+  .slicer{
+    display:flex;flex-wrap:wrap;gap:10px;
+    padding:20px 0 28px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:34px;
+  }
+  .slicer .label{
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted);
+    align-self:center;margin-right:6px;
+  }
+  .chip{
+    font-family:var(--mono);font-size:13px;letter-spacing:.05em;
+    padding:12px 18px;background:#fff;border:1px solid var(--ink);
+    cursor:pointer;transition:.15s;
+    position:relative;
+  }
+  .chip:hover{background:var(--ink);color:var(--paper)}
+  .chip.active{
+    background:var(--ink);color:var(--paper);
+    box-shadow:5px 5px 0 var(--hi);
+  }
+  .chip .dot{
+    display:inline-block;width:8px;height:8px;background:var(--hi);
+    margin-right:8px;vertical-align:middle;border-radius:50%;
+  }
+
+  /* product card */
+  .product{
+    display:grid;grid-template-columns:1.1fr 1.4fr;gap:36px;
+    background:#fff;border:1px solid var(--ink);
+    box-shadow:14px 14px 0 var(--ink);
+    padding:36px;
+    position:relative;
+  }
+  .product::before{
+    content:"";position:absolute;inset:0;
+    background:
+      linear-gradient(rgba(13,17,23,.025) 1px,transparent 1px) 0 0/100% 32px,
+      linear-gradient(90deg,rgba(13,17,23,.025) 1px,transparent 1px) 0 0/32px 100%;
+    pointer-events:none;
+  }
+  .head{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:6px}
+  .head .name{
+    font-family:var(--serif);font-weight:500;font-size:46px;letter-spacing:-1px;line-height:1;
+  }
+  .head .name small{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+  .head .badge{
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;background:var(--hi);color:#fff;padding:6px 12px;
+  }
+
+  .visuals{display:flex;flex-direction:column;gap:24px}
+  .vbox{border:1px solid var(--line);background:#fafaf6;padding:18px;position:relative}
+  .vbox h4{
+    font-family:var(--mono);font-size:10px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 12px;
+    display:flex;justify-content:space-between;
+  }
+  .vbox h4 span:last-child{color:var(--hi)}
+  .vbox .imgwrap{
+    display:flex;align-items:center;justify-content:center;
+    min-height:200px;background:#fff;border:1px solid var(--line);
+  }
+  .vbox img{max-width:100%;max-height:300px;display:block}
+  .vbox .empty{
+    color:var(--muted);font-size:13px;font-style:italic;text-align:center;padding:30px;
+  }
+  .view-btn{
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    padding:3px 9px;border:1px solid var(--line);background:#fff;color:var(--hi);
+    cursor:pointer;transition:.15s;
+  }
+  .view-btn:hover{background:var(--hi);color:#fff;border-color:var(--hi)}
+
+  /* ====== IMAGE LIGHTBOX ====== */
+  #imgZoom{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(13,17,23,.9);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;
+    transition:opacity .18s ease;
+    cursor:zoom-out;
+  }
+  #imgZoom.visible{opacity:1;pointer-events:auto}
+  #imgZoom img{
+    max-width:92vw;max-height:92vh;
+    display:block;
+    box-shadow:0 24px 80px rgba(0,0,0,.7);
+  }
+  #imgZoom .zm-close{
+    position:fixed;top:20px;right:24px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:rgba(246,244,238,.6);cursor:pointer;
+    background:none;border:1px solid rgba(246,244,238,.2);padding:6px 12px;
+  }
+  #imgZoom .zm-close:hover{color:#fff;border-color:#fff}
+
+  .specs h3{
+    font-family:var(--serif);font-weight:500;font-size:22px;
+    margin:0 0 18px;display:flex;align-items:center;gap:10px;
+  }
+  .specs h3::before{content:"";width:24px;height:2px;background:var(--hi)}
+  .grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:0;
+    border-top:1px solid var(--ink);border-left:1px solid var(--ink);
+  }
+  .cell{
+    border-right:1px solid var(--ink);border-bottom:1px solid var(--ink);
+    padding:16px 18px;background:#fff;position:relative;
+  }
+  .cell .k{
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px;
+  }
+  .cell .v{
+    font-family:var(--serif);font-weight:500;font-size:22px;
+    line-height:1.15;color:var(--ink);
+  }
+  .cell .v small{font-family:var(--sans);font-size:12px;color:var(--muted);font-weight:400}
+
+  .footer{
+    grid-column:1 / -1;margin-top:24px;padding-top:18px;
+    border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .footer .ts b{color:var(--ink)}
+
+  /* translating spinner */
+  .translating{
+    position:fixed;bottom:24px;right:24px;
+    background:var(--ink);color:var(--paper);
+    padding:14px 18px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+    text-transform:uppercase;display:none;align-items:center;gap:12px;z-index:100;
+  }
+  .translating.on{display:flex}
+  .translating .sp{width:14px;height:14px;border:2px solid var(--paper);border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .toast{position:fixed;bottom:24px;left:24px;background:var(--ink);color:var(--paper);padding:14px 18px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;z-index:100;animation:fade 4s forwards}
+  @keyframes fade{0%,80%{opacity:1}100%{opacity:0;transform:translateY(10px)}}
+
+  @media(max-width:1000px){
+    .product{grid-template-columns:1fr;box-shadow:8px 8px 0 var(--ink)}
+    .head .name{font-size:34px}
+    .hint{grid-template-columns:1fr}
+  }
+  @media print{
+    header,.slicer{display:none}
+    .product{box-shadow:none;break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="logo"><b>RV</b><span style="opacity:.55">·</span><i>SpecBoard</i></div>
+    <div class="meta" id="metaStrip">Exhibition viewer · awaiting file</div>
+    <div class="right">
+      <select class="btn" id="lang">
+        <option value="en">EN · English</option>
+        <option value="de">DE · Deutsch</option>
+        <option value="ja">JA · 日本語</option>
+        <option value="pt-BR">PT · Português (BR)</option>
+        <option value="es">ES · Español</option>
+        <option value="fr">FR · Français</option>
+        <option value="it">IT · Italiano</option>
+        <option value="zh-CN">ZH · 简体中文</option>
+        <option value="ko">KO · 한국어</option>
+        <option value="ar">AR · العربية</option>
+        <option value="ru">RU · Русский</option>
+        <option value="hi">HI · हिन्दी</option>
+      </select>
+      <button class="btn" id="printBtn" disabled>Print</button>
+      <button class="btn primary" id="newBtn" disabled>New File</button>
+    </div>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- DROP / UPLOAD VIEW -->
+  <section class="drop" id="drop">
+    <h1>Drop your <em>product spec</em> sheet</h1>
+    <p data-i18n>Upload the Excel file you take to exhibitions. Each product on the sheet becomes a tappable card. Switch languages on-the-fly with the dropdown above — labels and values translate live for visitors.</p>
+    <input id="file" type="file" accept=".xlsx,.xls" multiple>
+    <label class="upload" for="file" data-i18n>Choose Excel file(s)</label>
+    <div class="ftype" data-i18n>or drag one or more .xlsx files anywhere on this panel</div>
+
+    <div class="hint">
+      <div class="h">
+        <div class="n">01</div>
+        <div class="t" data-i18n>Auto-parses your sheet</div>
+        <div class="d" data-i18n>Detects every product laid out in columns and pulls each spec field, plus embedded dimensional drawings and performance curves.</div>
+      </div>
+      <div class="h">
+        <div class="n">02</div>
+        <div class="t" data-i18n>Slicer-style switching</div>
+        <div class="d" data-i18n>Big touch-friendly buttons let you flip between products instantly on a tablet — ideal for booth conversations.</div>
+      </div>
+      <div class="h">
+        <div class="n">03</div>
+        <div class="t" data-i18n>Live translation</div>
+        <div class="d" data-i18n>Pick the visitor's language and the entire card is translated — German, Japanese, Brazilian Portuguese, Chinese, and more.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEWER -->
+  <section id="viewer" style="display:none">
+    <div class="slicer" id="slicer">
+      <div class="label" data-i18n>Select Product</div>
+    </div>
+    <div id="productHost"></div>
+  </section>
+
+</main>
+
+<div class="translating" id="translating"><div class="sp"></div><span>Translating…</span></div>
+
+<div id="imgZoom">
+  <img id="imgZoomImg" src="" alt="">
+  <button class="zm-close" id="imgZoomClose">✕ Close</button>
+</div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  products: [],     // [{name, specs:[{k,v}], dim:imgDataUrl, curve:imgDataUrl, source:fileName}]
+  active: 0,
+  currentLang: 'en',
+  origCache: new WeakMap(),  // dom node -> original english text
+  fileNames: []
+};
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+/* ============================================================
+   FILE UPLOAD
+   ============================================================ */
+const drop = $('#drop');
+const fileInput = $('#file');
+
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {ev.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop', ev => {
+  const files = [...ev.dataTransfer.files].filter(f => /\.xlsx?$/i.test(f.name));
+  if(files.length) handleFiles(files);
+});
+fileInput.addEventListener('change', e => {
+  const files = [...e.target.files];
+  if(files.length) handleFiles(files);
+  fileInput.value = '';
+});
+
+$('#newBtn').addEventListener('click', () => {
+  $('#viewer').style.display = 'none';
+  $('#drop').style.display = 'block';
+  $('#printBtn').disabled = true;
+  $('#newBtn').disabled = true;
+  $('#metaStrip').textContent = 'Exhibition viewer · awaiting file';
+  state.products = [];
+  state.fileNames = [];
+});
+
+$('#printBtn').addEventListener('click', () => window.print());
+
+/* ============================================================
+   PARSE .xlsx  (supports multiple files)
+   ============================================================ */
+async function handleFiles(files){
+  const allProducts = [];
+  const fileNames = [];
+  const failed = [];
+
+  for(const file of files){
+    try{
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, blankrows:true});
+      const images = await extractImages(buf);
+      const products = detectProducts(aoa, images);
+      if(!products.length){
+        failed.push(file.name + ' (no products detected)');
+        continue;
+      }
+      products.forEach(p => p.source = file.name);
+      allProducts.push(...products);
+      fileNames.push(file.name);
+    }catch(err){
+      console.error(err);
+      failed.push(file.name + ' (read error)');
+    }
+  }
+
+  if(failed.length){
+    const msg = failed.map(s => '• ' + s).join('\n');
+    alert('Some files could not be loaded:\n' + msg);
+  }
+  if(!allProducts.length) return;
+
+  state.products = allProducts;
+  state.fileNames = fileNames;
+  state.active = 0;
+  state.currentLang = 'en';
+  $('#lang').value = 'en';
+  showViewer();
+}
+
+/* Pull all images out of /xl/media/ and map them to a cell by parsing drawing XML */
+async function extractImages(buf){
+  const zip = await JSZip.loadAsync(buf);
+  const images = {}; // name -> dataUrl
+
+  for(const path of Object.keys(zip.files)){
+    if(path.startsWith('xl/media/')){
+      const blob = await zip.files[path].async('blob');
+      const dataUrl = await blobToDataURL(blob);
+      images[path.replace('xl/media/','')] = dataUrl;
+    }
+  }
+
+  // Parse drawing1.xml + its rels to map images to their anchor cell
+  const anchors = [];
+  for(const drawPath of Object.keys(zip.files).filter(p => p.match(/^xl\/drawings\/drawing\d+\.xml$/))){
+    const xml = await zip.files[drawPath].async('text');
+    const relsPath = drawPath.replace('drawings/','drawings/_rels/') + '.rels';
+    const relsXml = zip.files[relsPath] ? await zip.files[relsPath].async('text') : '';
+    const rels = {};
+    relsXml.replace(/<Relationship[^>]+Id="([^"]+)"[^>]+Target="([^"]+)"/g, (m,id,t) => {
+      rels[id] = t.replace('../media/','');
+      return '';
+    });
+    // each anchor: pull row/col from xdr:from
+    const blockRe = /<xdr:(twoCellAnchor|oneCellAnchor)[\s\S]*?<\/xdr:\1>/g;
+    let m;
+    while((m = blockRe.exec(xml))){
+      const block = m[0];
+      const col = +((block.match(/<xdr:from>[\s\S]*?<xdr:col>(\d+)<\/xdr:col>/) || [])[1] || 0);
+      const row = +((block.match(/<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/) || [])[1] || 0);
+      const embedId = (block.match(/r:embed="([^"]+)"/) || [])[1];
+      if(embedId && rels[embedId] && images[rels[embedId]]){
+        anchors.push({col, row, src: images[rels[embedId]]});
+      }
+    }
+  }
+
+  return anchors; // [{col,row,src}]
+}
+
+function blobToDataURL(b){return new Promise(r => {const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b)})}
+
+/* Detect product blocks: products are columns in row 0 with non-empty values.
+   Each block stretches until the next product or end of sheet. */
+function detectProducts(aoa, imageAnchors){
+  const row0 = aoa[0] || [];
+  const heads = [];
+  row0.forEach((v,i) => {
+    if(v && String(v).trim()) heads.push({col:i, name:String(v).trim()});
+  });
+  if(!heads.length) return [];
+
+  // figure out each product's column span
+  for(let i=0;i<heads.length;i++){
+    heads[i].start = heads[i].col;
+    heads[i].end = (i+1 < heads.length) ? heads[i+1].col - 1 : (Math.max(...aoa.map(r => (r||[]).length)) - 1);
+  }
+
+  // find Technical Data row
+  const techRow = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase() === 'technical data'));
+  const dimRow = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().includes('dimensional')));
+  const curveRow = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().includes('performance curve')));
+
+  return heads.map(h => {
+    const specs = [];
+    if(techRow > -1){
+      for(let r = techRow + 1; r < aoa.length; r++){
+        const row = aoa[r] || [];
+        // within column range start..end, extract label-value pairs.
+        // Pattern from sample: label in col, value 2 cells right; then next label, next value.
+        for(let c = h.start; c <= h.end; c++){
+          const cell = row[c];
+          if(cell && typeof cell === 'string' && cell.trim() && !looksLikeNumber(cell)){
+            // search forward for a value (skip nulls)
+            for(let look = c+1; look <= Math.min(c+4, h.end); look++){
+              const v = row[look];
+              if(v !== null && v !== undefined && String(v).trim() !== ''){
+                specs.push({k:cell.trim(), v:String(v).trim()});
+                c = look;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // pick images whose anchor lands inside this product's column range
+    const dim = imageAnchors.find(a => a.col >= h.start && a.col <= h.end && a.row >= 1 && a.row < (curveRow > -1 ? curveRow : 20));
+    const curve = imageAnchors.find(a => a.col >= h.start && a.col <= h.end && a.row >= (curveRow > -1 ? curveRow : 15) && a.row < (techRow > -1 ? techRow : 999) && a !== dim);
+
+    return {name:h.name, specs, dim: dim ? dim.src : null, curve: curve ? curve.src : null};
+  });
+}
+
+function looksLikeNumber(s){return /^[\d.,\-]+$/.test(String(s).trim())}
+
+/* ============================================================
+   RENDER VIEWER
+   ============================================================ */
+function showViewer(){
+  $('#drop').style.display = 'none';
+  $('#viewer').style.display = 'block';
+  $('#printBtn').disabled = false;
+  $('#newBtn').disabled = false;
+  const fCount = state.fileNames.length;
+  const pCount = state.products.length;
+  $('#metaStrip').textContent = (fCount > 1 ? fCount + ' files' : state.fileNames[0] || 'file') + ' · ' + pCount + ' product' + (pCount > 1 ? 's' : '') + ' detected';
+
+  // render slicer chips
+  const slicer = $('#slicer');
+  slicer.innerHTML = '<div class="label" data-i18n>Select Product</div>';
+  state.products.forEach((p,i) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (i === state.active ? ' active' : '');
+    b.innerHTML = (i === state.active ? '<span class="dot"></span>' : '') + escapeHtml(p.name);
+    b.onclick = () => {state.active = i; showViewer(); maybeTranslate()};
+    slicer.appendChild(b);
+  });
+
+  renderProduct();
+  // re-apply translation if not english
+  if(state.currentLang !== 'en'){
+    translateUI(state.currentLang);
+  }
+}
+
+function renderProduct(){
+  const p = state.products[state.active];
+  const host = $('#productHost');
+  const ts = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+  host.innerHTML = `
+    <article class="product">
+      <div class="head">
+        <div class="name">
+          <small data-i18n>Product Reference</small>
+          ${escapeHtml(p.name)}
+        </div>
+        <div class="badge" data-i18n>Spec Sheet</div>
+      </div>
+
+      <div class="visuals">
+        <div class="vbox">
+          <h4>
+            <span data-i18n>Dimensional Details</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              ${p.dim ? `<button class="view-btn">View</button>` : ''}
+              <span>01</span>
+            </span>
+          </h4>
+          <div class="imgwrap">
+            ${p.dim ? `<img src="${p.dim}" alt="Dimensions">` : `<div class="empty" data-i18n>No dimensional drawing in file</div>`}
+          </div>
+        </div>
+        <div class="vbox">
+          <h4>
+            <span data-i18n>HQ Performance Curve</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              ${p.curve ? `<button class="view-btn">View</button>` : ''}
+              <span>02</span>
+            </span>
+          </h4>
+          <div class="imgwrap">
+            ${p.curve ? `<img src="${p.curve}" alt="Curve">` : `<div class="empty" data-i18n>No performance curve in file</div>`}
+          </div>
+        </div>
+      </div>
+
+      <div class="specs">
+        <h3 data-i18n>Technical Data</h3>
+        <div class="grid">
+          ${p.specs.map(s => `
+            <div class="cell">
+              <div class="k" data-i18n>${escapeHtml(s.k)}</div>
+              <div class="v">${escapeHtml(s.v)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="ts"><span data-i18n>Generated</span> · <b>${ts}</b></div>
+        <div class="ts"><span data-i18n>Source</span> · <b>${escapeHtml(p.source || state.fileNames[0] || '')}</b></div>
+      </div>
+    </article>
+  `;
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+/* ============================================================
+   TRANSLATION (MyMemory free API, no key)
+   - We cache results so re-selecting a language is instant
+   ============================================================ */
+const tCache = {}; // {langCode: {origText: translatedText}}
+
+$('#lang').addEventListener('change', e => {
+  translateUI(e.target.value);
+});
+
+function maybeTranslate(){
+  if(state.currentLang !== 'en') translateUI(state.currentLang);
+}
+
+async function translateUI(lang){
+  state.currentLang = lang;
+  if(lang === 'en'){
+    restoreOriginal();
+    return;
+  }
+
+  $('#translating').classList.add('on');
+
+  // collect all data-i18n nodes plus the .v value cells and .name product text and chip buttons
+  const nodes = [];
+  $$('[data-i18n]').forEach(n => nodes.push(n));
+  $$('.cell .v').forEach(n => nodes.push(n));
+  $$('.chip').forEach(n => nodes.push(n));
+  $$('.head .name').forEach(n => {
+    // only translate the product code text node — leave the small label alone (it has data-i18n already)
+    // we'll just leave the product name AS IS since it's a model code (not translatable)
+  });
+
+  // store originals
+  nodes.forEach(n => {
+    if(!state.origCache.has(n)){
+      state.origCache.set(n, n.tagName === 'BUTTON' ? n.innerHTML : n.textContent);
+    }
+  });
+
+  tCache[lang] = tCache[lang] || {};
+
+  const tasks = [];
+  for(const n of nodes){
+    const orig = state.origCache.get(n);
+    if(!orig || !orig.trim()) continue;
+    // skip pure model codes / numbers
+    if(/^[\d.\-\/\s,]+$/.test(orig.replace(/[A-Za-z]/g,''))){
+      // contains letters? maybe a product code like "RV40/170-E - 389" — keep as is
+      // For .v cells: translate units words but keep numbers
+    }
+    // For chip buttons, keep model code as-is
+    if(n.classList && n.classList.contains('chip')) continue;
+    // For value cells that are mostly numbers/units, also keep as is
+    if(n.classList && n.classList.contains('v') && /\d/.test(orig) && orig.length < 30){
+      // short numeric values — keep
+      continue;
+    }
+
+    if(tCache[lang][orig]){
+      applyTrans(n, tCache[lang][orig]);
+      continue;
+    }
+    tasks.push(translateOne(orig, lang).then(t => {
+      tCache[lang][orig] = t;
+      applyTrans(n, t);
+    }));
+  }
+
+  await Promise.all(tasks);
+  $('#translating').classList.remove('on');
+}
+
+function applyTrans(node, text){
+  if(node.tagName === 'BUTTON' && node.querySelector('.dot')){
+    node.innerHTML = '<span class="dot"></span>' + escapeHtml(text);
+  } else {
+    node.textContent = text;
+  }
+}
+
+function restoreOriginal(){
+  // walk every node we've cached and restore
+  $$('[data-i18n], .cell .v, .chip').forEach(n => {
+    if(state.origCache.has(n)){
+      const orig = state.origCache.get(n);
+      if(n.tagName === 'BUTTON' && orig.includes('<span class="dot"')){
+        n.innerHTML = orig;
+      } else {
+        n.textContent = orig;
+      }
+    }
+  });
+}
+
+async function translateOne(text, lang){
+  // MyMemory limits ~500 chars per call. Keep short.
+  if(text.length > 500) text = text.slice(0,500);
+  try{
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${lang}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data && data.responseData && data.responseData.translatedText){
+      return data.responseData.translatedText;
+    }
+  }catch(e){console.warn('translation failed for', text, e)}
+  return text;
+}
+
+/* ============================================================
+   IMAGE LIGHTBOX  (button-triggered)
+   ============================================================ */
+(function(){
+  const overlay = document.getElementById('imgZoom');
+  const zoomImg = document.getElementById('imgZoomImg');
+
+  function open(src){ zoomImg.src = src; overlay.classList.add('visible'); }
+  function close(){ overlay.classList.remove('visible'); zoomImg.src = ''; }
+
+  // Click on any View button inside the product host
+  document.getElementById('productHost').addEventListener('click', e => {
+    const btn = e.target.closest('.view-btn');
+    if(!btn) return;
+    const img = btn.closest('.vbox').querySelector('img');
+    if(img) open(img.src);
+  });
+
+  overlay.addEventListener('click', close);
+  document.getElementById('imgZoomClose').addEventListener('click', e => { e.stopPropagation(); close(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') close(); });
+})();
+</script>
+</body>
+</html>
