@@ -183,6 +183,36 @@
   }
   .view-btn:hover{background:var(--hi);color:#fff;border-color:var(--hi)}
 
+  /* ====== PIN GATE MODAL ====== */
+  #pinModal{
+    position:fixed;inset:0;z-index:400;
+    background:rgba(13,17,23,.8);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .18s;
+  }
+  #pinModal.open{opacity:1;pointer-events:auto}
+  #pinModal .box{
+    background:var(--paper);border:1px solid var(--ink);
+    box-shadow:8px 8px 0 var(--ink);
+    padding:32px 28px;width:min(320px,90vw);text-align:center;
+  }
+  #pinModal .lock-icon{font-size:28px;margin-bottom:10px;line-height:1}
+  #pinModal h2{font-family:var(--serif);font-size:20px;font-weight:500;margin:0 0 6px}
+  #pinModal p{font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.5}
+  #pinInput{
+    width:100%;font-family:var(--mono);font-size:22px;letter-spacing:.4em;
+    text-align:center;padding:12px 8px;border:1px solid var(--ink);
+    background:#fff;color:var(--ink);outline:none;margin-bottom:8px;
+    -webkit-text-security:disc;
+  }
+  #pinInput:focus{border-color:var(--hi);box-shadow:3px 3px 0 var(--hi)}
+  #pinError{
+    font-family:var(--mono);font-size:11px;color:var(--hi);
+    letter-spacing:.1em;text-transform:uppercase;
+    min-height:18px;margin-bottom:12px;
+  }
+  #pinModal .modal-row{display:flex;gap:10px;justify-content:center}
+
   /* ====== API KEY MODAL ====== */
   #keyModal{
     position:fixed;inset:0;z-index:300;
@@ -196,12 +226,8 @@
     box-shadow:8px 8px 0 var(--ink);
     padding:32px;width:min(460px,92vw);
   }
-  #keyModal h2{
-    font-family:var(--serif);font-size:22px;font-weight:500;
-    margin:0 0 8px;
-  }
+  #keyModal h2{font-family:var(--serif);font-size:22px;font-weight:500;margin:0 0 8px}
   #keyModal p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 6px}
-  #keyModal p a{color:var(--hi)}
   #keyModal p.sub{font-size:11px;font-family:var(--mono);letter-spacing:.1em;margin-bottom:18px}
   #keyInput{
     width:100%;font-family:var(--mono);font-size:13px;letter-spacing:.04em;
@@ -209,10 +235,35 @@
     color:var(--ink);outline:none;margin-bottom:16px;
   }
   #keyInput:focus{border-color:var(--hi);box-shadow:3px 3px 0 var(--hi)}
-  .modal-row{display:flex;gap:10px;justify-content:flex-end}
+  .pin-section{
+    border-top:1px solid var(--line);margin-top:18px;padding-top:18px;
+  }
+  .pin-section .pin-label{
+    font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .pin-section .pin-status{
+    font-size:11px;letter-spacing:.1em;padding:2px 8px;
+    border:1px solid var(--line);background:#fff;
+  }
+  .pin-section .pin-status.set{color:var(--ok);border-color:var(--ok)}
+  #newPinInput{
+    width:100%;font-family:var(--mono);font-size:13px;letter-spacing:.1em;
+    padding:10px 12px;border:1px solid var(--line);background:#fff;
+    color:var(--ink);outline:none;margin-bottom:4px;
+  }
+  #newPinInput:focus{border-color:var(--hi);box-shadow:3px 3px 0 var(--hi)}
+  .pin-hint{font-size:11px;font-family:var(--mono);color:var(--muted);margin-bottom:0}
+  .modal-row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
   .key-dot{
     display:inline-block;width:7px;height:7px;
     background:var(--ok);border-radius:50%;
+    margin-left:5px;vertical-align:middle;
+  }
+  .lock-dot{
+    display:inline-block;width:7px;height:7px;
+    background:var(--hi-2);border-radius:50%;
     margin-left:5px;vertical-align:middle;
   }
 
@@ -446,14 +497,38 @@
 
 <div class="translating" id="translating"><div class="sp"></div><span>Translating…</span></div>
 
+<div id="pinModal">
+  <div class="box">
+    <div class="lock-icon">🔒</div>
+    <h2>Enter PIN</h2>
+    <p>This setting is protected. Enter your PIN to continue.</p>
+    <input id="pinInput" type="password" maxlength="12" placeholder="• • • •" autocomplete="off">
+    <div id="pinError"></div>
+    <div class="modal-row">
+      <button class="btn" id="pinCancel" style="color:var(--ink);border-color:var(--line-2)">Cancel</button>
+      <button class="btn primary" id="pinUnlock">Unlock</button>
+    </div>
+  </div>
+</div>
+
 <div id="keyModal">
   <div class="box">
     <h2>MyMemory API Key</h2>
-    <p>Enter your <strong>email address</strong> to get <strong>10,000 words/day free</strong> (10× the default). No registration needed — MyMemory just uses it to track your quota.</p>
+    <p>Enter your <strong>email address</strong> to get <strong>10,000 words/day free</strong> (10× the default). No registration needed.</p>
     <p class="sub">Or paste a paid API key for higher limits.</p>
     <input id="keyInput" type="text" placeholder="your@email.com or API key…" spellcheck="false" autocomplete="off">
+
+    <div class="pin-section">
+      <div class="pin-label">
+        <span>PIN Protection</span>
+        <span class="pin-status" id="pinStatus">Not set</span>
+      </div>
+      <input id="newPinInput" type="password" maxlength="12" placeholder="Set a new PIN (leave blank to remove)…" autocomplete="new-password">
+      <p class="pin-hint">Visitors will need this PIN to open API Key settings.</p>
+    </div>
+
     <div class="modal-row">
-      <button class="btn" id="keyClear" style="color:var(--ink);border-color:var(--line-2)">Clear</button>
+      <button class="btn" id="keyClear" style="color:var(--ink);border-color:var(--line-2)">Clear Key</button>
       <button class="btn primary" id="keySave">Save</button>
     </div>
   </div>
@@ -876,40 +951,114 @@ function showToast(msg){
   setTimeout(() => t.remove(), 4200);
 }
 
-/* ====== API KEY MODAL ====== */
+/* ====== API KEY + PIN MODALS ====== */
 (function(){
-  const modal   = document.getElementById('keyModal');
-  const input   = document.getElementById('keyInput');
-  const keyBtn  = document.getElementById('keyBtn');
+  const keyModal  = document.getElementById('keyModal');
+  const pinModal  = document.getElementById('pinModal');
+  const keyInput  = document.getElementById('keyInput');
+  const pinInput  = document.getElementById('pinInput');
+  const newPinInput = document.getElementById('newPinInput');
+  const pinError  = document.getElementById('pinError');
+  const pinStatus = document.getElementById('pinStatus');
+  const keyBtn    = document.getElementById('keyBtn');
+
+  let storedPin = localStorage.getItem('mmPin') || '';
 
   function syncBtn(){
-    keyBtn.innerHTML = apiKey
-      ? 'API Key <span class="key-dot"></span>'
-      : 'API Key';
+    let html = 'API Key';
+    if(apiKey)    html += ' <span class="key-dot"></span>';
+    if(storedPin) html += ' <span class="lock-dot"></span>';
+    keyBtn.innerHTML = html;
   }
+
+  function syncPinStatus(){
+    pinStatus.textContent = storedPin ? 'Set ✓' : 'Not set';
+    pinStatus.className   = 'pin-status' + (storedPin ? ' set' : '');
+  }
+
   syncBtn();
-  input.value = apiKey;
+  syncPinStatus();
 
+  /* --- open flow --- */
   keyBtn.addEventListener('click', () => {
-    input.value = apiKey;
-    modal.classList.add('open');
-    setTimeout(() => input.focus(), 80);
+    if(storedPin){
+      pinInput.value = '';
+      pinError.textContent = '';
+      pinModal.classList.add('open');
+      setTimeout(() => pinInput.focus(), 80);
+    } else {
+      openKeyModal();
+    }
   });
 
+  function openKeyModal(){
+    keyInput.value    = apiKey;
+    newPinInput.value = '';
+    syncPinStatus();
+    keyModal.classList.add('open');
+    setTimeout(() => keyInput.focus(), 80);
+  }
+
+  /* --- PIN gate --- */
+  document.getElementById('pinUnlock').addEventListener('click', tryUnlock);
+  pinInput.addEventListener('keydown', e => { if(e.key === 'Enter') tryUnlock(); });
+
+  function tryUnlock(){
+    if(pinInput.value === storedPin){
+      pinModal.classList.remove('open');
+      pinInput.value = '';
+      pinError.textContent = '';
+      openKeyModal();
+    } else {
+      pinError.textContent = 'Incorrect PIN';
+      pinInput.value = '';
+      pinInput.focus();
+    }
+  }
+
+  document.getElementById('pinCancel').addEventListener('click', () => {
+    pinModal.classList.remove('open');
+    pinInput.value = '';
+    pinError.textContent = '';
+  });
+
+  /* --- save key + PIN --- */
   document.getElementById('keySave').addEventListener('click', () => {
-    apiKey = input.value.trim();
+    apiKey = keyInput.value.trim();
     localStorage.setItem('mmApiKey', apiKey);
-    modal.classList.remove('open');
+
+    const newPin = newPinInput.value;
+    storedPin = newPin;
+    if(newPin) localStorage.setItem('mmPin', newPin);
+    else       localStorage.removeItem('mmPin');
+
+    keyModal.classList.remove('open');
     syncBtn();
+    syncPinStatus();
     quotaWarned = false;
-    Object.keys(tCache).forEach(k => delete tCache[k]); // clear cache so new key takes effect
-    showToast(apiKey ? 'API key saved — daily limit increased' : 'API key cleared');
+    Object.keys(tCache).forEach(k => delete tCache[k]);
+
+    const msg = [];
+    if(apiKey)    msg.push('API key saved');
+    if(newPin)    msg.push('PIN protected');
+    else if(!newPin && !storedPin) msg.push(apiKey ? '' : 'API key cleared');
+    showToast(msg.filter(Boolean).join(' · ') || 'Settings saved');
   });
 
-  document.getElementById('keyClear').addEventListener('click', () => { input.value = ''; });
+  document.getElementById('keyClear').addEventListener('click', () => { keyInput.value = ''; });
 
-  modal.addEventListener('click', e => { if(e.target === modal) modal.classList.remove('open'); });
-  document.addEventListener('keydown', e => { if(e.key === 'Escape') modal.classList.remove('open'); });
+  /* --- close on backdrop / Escape --- */
+  keyModal.addEventListener('click', e => { if(e.target === keyModal) keyModal.classList.remove('open'); });
+  pinModal.addEventListener('click', e => {
+    if(e.target === pinModal){ pinModal.classList.remove('open'); pinError.textContent = ''; }
+  });
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){
+      keyModal.classList.remove('open');
+      pinModal.classList.remove('open');
+      pinError.textContent = '';
+    }
+  });
 })();
 
 /* ============================================================
