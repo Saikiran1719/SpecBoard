@@ -183,6 +183,39 @@
   }
   .view-btn:hover{background:var(--hi);color:#fff;border-color:var(--hi)}
 
+  /* ====== API KEY MODAL ====== */
+  #keyModal{
+    position:fixed;inset:0;z-index:300;
+    background:rgba(13,17,23,.75);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .18s;
+  }
+  #keyModal.open{opacity:1;pointer-events:auto}
+  #keyModal .box{
+    background:var(--paper);border:1px solid var(--ink);
+    box-shadow:8px 8px 0 var(--ink);
+    padding:32px;width:min(460px,92vw);
+  }
+  #keyModal h2{
+    font-family:var(--serif);font-size:22px;font-weight:500;
+    margin:0 0 8px;
+  }
+  #keyModal p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 6px}
+  #keyModal p a{color:var(--hi)}
+  #keyModal p.sub{font-size:11px;font-family:var(--mono);letter-spacing:.1em;margin-bottom:18px}
+  #keyInput{
+    width:100%;font-family:var(--mono);font-size:13px;letter-spacing:.04em;
+    padding:10px 12px;border:1px solid var(--ink);background:#fff;
+    color:var(--ink);outline:none;margin-bottom:16px;
+  }
+  #keyInput:focus{border-color:var(--hi);box-shadow:3px 3px 0 var(--hi)}
+  .modal-row{display:flex;gap:10px;justify-content:flex-end}
+  .key-dot{
+    display:inline-block;width:7px;height:7px;
+    background:var(--ok);border-radius:50%;
+    margin-left:5px;vertical-align:middle;
+  }
+
   /* ====== IMAGE LIGHTBOX ====== */
   #imgZoom{
     position:fixed;inset:0;z-index:200;
@@ -365,6 +398,7 @@
         <option value="ms">MS · Bahasa Melayu</option>
         <option value="sw">SW · Kiswahili</option>
       </select>
+      <button class="btn" id="keyBtn">API Key</button>
       <button class="btn" id="printBtn" disabled>Print</button>
       <button class="btn primary" id="newBtn" disabled>New File</button>
     </div>
@@ -411,6 +445,19 @@
 </main>
 
 <div class="translating" id="translating"><div class="sp"></div><span>Translating…</span></div>
+
+<div id="keyModal">
+  <div class="box">
+    <h2>MyMemory API Key</h2>
+    <p>Enter your <strong>email address</strong> to get <strong>10,000 words/day free</strong> (10× the default). No registration needed — MyMemory just uses it to track your quota.</p>
+    <p class="sub">Or paste a paid API key for higher limits.</p>
+    <input id="keyInput" type="text" placeholder="your@email.com or API key…" spellcheck="false" autocomplete="off">
+    <div class="modal-row">
+      <button class="btn" id="keyClear" style="color:var(--ink);border-color:var(--line-2)">Clear</button>
+      <button class="btn primary" id="keySave">Save</button>
+    </div>
+  </div>
+</div>
 
 <div id="imgZoom">
   <img id="imgZoomImg" src="" alt="">
@@ -793,21 +840,28 @@ function restoreOriginal(){
 }
 
 let quotaWarned = false;
+let apiKey = localStorage.getItem('mmApiKey') || '';
+
+function buildTransUrl(text, lang){
+  const base = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${lang}`;
+  if(!apiKey) return base;
+  // email → &de=  |  API key string → &key=
+  return apiKey.includes('@') ? base + `&de=${encodeURIComponent(apiKey)}`
+                               : base + `&key=${encodeURIComponent(apiKey)}`;
+}
 
 async function translateOne(text, lang){
   if(text.length > 500) text = text.slice(0,500);
   try{
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${lang}`;
-    const res = await fetch(url);
+    const res = await fetch(buildTransUrl(text, lang));
     const data = await res.json();
     const t = data?.responseData?.translatedText || '';
-    // API quota exceeded — it returns a warning string instead of a real translation
     if(data?.responseStatus !== 200 || t.startsWith('MYMEMORY WARNING')){
       if(!quotaWarned){
         quotaWarned = true;
-        showToast('Translation quota reached — try again tomorrow');
+        showToast('Translation quota reached — add your email in API Key to get 10× limit');
       }
-      return text; // keep original
+      return text;
     }
     if(t) return t;
   }catch(e){console.warn('translation failed for', text, e)}
@@ -821,6 +875,42 @@ function showToast(msg){
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 4200);
 }
+
+/* ====== API KEY MODAL ====== */
+(function(){
+  const modal   = document.getElementById('keyModal');
+  const input   = document.getElementById('keyInput');
+  const keyBtn  = document.getElementById('keyBtn');
+
+  function syncBtn(){
+    keyBtn.innerHTML = apiKey
+      ? 'API Key <span class="key-dot"></span>'
+      : 'API Key';
+  }
+  syncBtn();
+  input.value = apiKey;
+
+  keyBtn.addEventListener('click', () => {
+    input.value = apiKey;
+    modal.classList.add('open');
+    setTimeout(() => input.focus(), 80);
+  });
+
+  document.getElementById('keySave').addEventListener('click', () => {
+    apiKey = input.value.trim();
+    localStorage.setItem('mmApiKey', apiKey);
+    modal.classList.remove('open');
+    syncBtn();
+    quotaWarned = false;
+    Object.keys(tCache).forEach(k => delete tCache[k]); // clear cache so new key takes effect
+    showToast(apiKey ? 'API key saved — daily limit increased' : 'API key cleared');
+  });
+
+  document.getElementById('keyClear').addEventListener('click', () => { input.value = ''; });
+
+  modal.addEventListener('click', e => { if(e.target === modal) modal.classList.remove('open'); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') modal.classList.remove('open'); });
+})();
 
 /* ============================================================
    IMAGE LIGHTBOX  (button-triggered)
