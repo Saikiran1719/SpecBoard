@@ -376,6 +376,13 @@
     max-height:100%;max-width:100%;
     height:100%;object-fit:contain;
   }
+  .spec-desc-text{
+    font-family:var(--serif);font-size:12px;line-height:1.75;
+    color:var(--hi);padding:4px 2px;
+    height:calc(100% - 28px);
+    overflow-y:auto;white-space:pre-line;
+    scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+  }
 
   /* Full-width Technical Data below the image strip */
   .specs-col{
@@ -1178,9 +1185,34 @@ function parseRowBasedProduct(aoa, imageAnchors){
   }
   const specialityAny  = pickVal(aoa[0]||[], 6);
   const specialityCode = pickVal(aoa[1]||[], 6);
-  const specialityDesc = pickVal(aoa[2]||[], 6);
 
   const techRow  = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase() === 'technical data'));
+
+  // Collect "Description of Speciality" text from rows 2→techRow.
+  // Scan from col 4 so we catch merged cells that start at col F (index 5)
+  // or earlier, while col G (index 6) is inside the merge and reads as null.
+  const descEnd = techRow > -1 ? techRow : Math.min(aoa.length, 20);
+  const descLines = [];
+  for(let r = 2; r < descEnd; r++){
+    const row = aoa[r] || [];
+    // Try col 4 upward; skip the label cell itself
+    let v = '';
+    for(let c = 4; c <= 13; c++){
+      const raw = row[c];
+      if(raw != null && String(raw).trim()){
+        const candidate = String(raw).trim();
+        if(!/^description\s+of\s+speciality/i.test(candidate) &&
+           !/^special\s*code/i.test(candidate) &&
+           !/^speciality/i.test(candidate)){
+          v = candidate;
+        }
+        break;
+      }
+    }
+    if(v) descLines.push(v);
+  }
+  const specialityDesc = descLines.join('\n');
+
   const dimRow   = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().startsWith('dimensional')));
   const curveRow = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().includes('performance curve')));
   const partsRow = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().includes('parts list')));
@@ -1383,18 +1415,24 @@ function renderRowBasedProduct(p, host){
           <small data-i18n>Model</small>
           ${escapeHtml(p.name)}
         </div>
-        ${(p.specialityAny || p.specialityCode || p.specialityDesc) ? `
+        ${(p.specialityAny || p.specialityCode) ? `
         <div class="speciality-block">
           ${p.specialityAny  ? `<div class="sp-row"><span data-i18n>Speciality</span><b>${escapeHtml(p.specialityAny)}</b></div>`  : ''}
           ${p.specialityCode ? `<div class="sp-row"><span data-i18n>Special Code</span><b>${escapeHtml(p.specialityCode)}</b></div>` : ''}
-          ${p.specialityDesc ? `<div class="sp-row"><span data-i18n>Description</span><b>${escapeHtml(p.specialityDesc)}</b></div>`  : ''}
         </div>` : ''}
         <div class="badge" data-i18n>Spec Sheet</div>
       </div>
 
       <div class="images-row">
         ${p.logo ? imgBox('', 'Product', p.logo) : ''}
-        ${p.logo2 ? imgBox('', 'Description of Speciality', p.logo2) : ''}
+        ${p.logo2
+          ? imgBox('', 'Description of Speciality', p.logo2)
+          : p.specialityDesc
+            ? `<div class="vbox">
+                <h4><span data-i18n>Description of Speciality</span><span></span></h4>
+                <div class="spec-desc-text">${escapeHtml(p.specialityDesc)}</div>
+               </div>`
+            : ''}
         ${imgBox('01','Dimensional Details', p.dim)}
         ${imgBox('02','HQ Performance Curve', p.curve)}
         ${imgBox('03','Parts List — Cross Section', p.parts)}
@@ -1441,7 +1479,7 @@ async function translateUI(lang){
   // collect all data-i18n nodes plus the .v value cells and .name product text and chip buttons
   const nodes = [];
   $$('[data-i18n]').forEach(n => nodes.push(n));
-  $$('.cell .v, .spec-val-cell').forEach(n => nodes.push(n));
+  $$('.cell .v, .spec-val-cell, .spec-desc-text').forEach(n => nodes.push(n));
   $$('.chip').forEach(n => nodes.push(n));
   $$('.head .name').forEach(n => {
     // only translate the product code text node — leave the small label alone (it has data-i18n already)
@@ -1498,7 +1536,7 @@ function applyTrans(node, text){
 
 function restoreOriginal(){
   // walk every node we've cached and restore
-  $$('[data-i18n], .cell .v, .spec-val-cell, .chip').forEach(n => {
+  $$('[data-i18n], .cell .v, .spec-val-cell, .spec-desc-text, .chip').forEach(n => {
     if(state.origCache.has(n)){
       const orig = state.origCache.get(n);
       if(n.tagName === 'BUTTON' && orig.includes('<span class="dot"')){
