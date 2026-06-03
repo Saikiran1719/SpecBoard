@@ -345,6 +345,132 @@
   .toast{position:fixed;bottom:24px;left:24px;background:var(--ink);color:var(--paper);padding:14px 18px;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;z-index:100;animation:fade 4s forwards}
   @keyframes fade{0%,80%{opacity:1}100%{opacity:0;transform:translateY(10px)}}
 
+  /* ====== ROW-BASED PRODUCT LAYOUT (single product per sheet) ====== */
+  .product-row{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto auto;
+    padding:0;gap:0;
+  }
+  .product-row .head{
+    padding:16px 24px 14px;margin-bottom:0;
+  }
+
+  /* Horizontal image strip — 4 or 5 boxes side by side */
+  .images-row{
+    display:flex;
+    height:clamp(220px,34vh,400px);
+    border-bottom:2px solid var(--ink);
+    overflow:hidden;
+  }
+  .images-row .vbox{
+    flex:1;min-height:0;overflow:hidden;
+    border:none;border-right:1px solid var(--line);
+    padding:10px;background:#fafaf6;
+  }
+  .images-row .vbox:last-child{border-right:none}
+  .images-row .vbox .imgwrap{
+    min-height:0 !important;
+    height:calc(100% - 28px);
+  }
+  .images-row .vbox img{
+    max-height:100%;max-width:100%;
+    height:100%;object-fit:contain;
+  }
+
+  /* Full-width Technical Data below the image strip */
+  .specs-col{
+    display:flex;flex-direction:column;overflow:hidden;min-height:0;
+  }
+  .specs-col > h3{
+    font-family:var(--serif);font-weight:500;font-size:18px;
+    margin:0;padding:14px 16px 12px;
+    display:flex;align-items:center;gap:10px;
+    border-bottom:2px solid var(--ink);flex-shrink:0;
+  }
+  .specs-col > h3::before{content:"";width:20px;height:2px;background:var(--hi);flex-shrink:0}
+  .specs-col > .footer{
+    flex-shrink:0;margin-top:0;
+    padding:10px 16px;border-top:1px solid var(--line);
+  }
+
+  /* 4-column technical data grid */
+  .spec-grid-4{
+    display:grid;
+    grid-template-columns:2fr 1fr 2fr 1fr;
+    flex:1;min-height:0;overflow-y:auto;
+    border-left:1px solid var(--line);
+    border-top:1px solid var(--line);
+    align-content:start;
+    scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+  }
+  .spec-grid-4::-webkit-scrollbar{width:3px}
+  .spec-grid-4::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
+
+  .spec-section-hdr{
+    grid-column:1 / -1;
+    background:var(--ink-2);color:rgba(246,244,238,.85);
+    font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;padding:7px 14px;
+    border-right:1px solid var(--line-2);
+    border-bottom:1px solid var(--ink);
+  }
+  .spec-lbl{
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);
+    padding:10px 12px;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:var(--paper-2);
+    display:flex;align-items:center;
+  }
+  .spec-val-cell{
+    font-family:var(--serif);font-weight:500;font-size:16px;
+    padding:10px 14px;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:#fff;
+    display:flex;align-items:center;
+    overflow-wrap:break-word;word-break:break-word;
+  }
+  .spec-note{
+    grid-column:1 / -1;
+    font-size:11px;color:var(--muted);font-style:italic;
+    padding:7px 14px;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:#fff;
+  }
+
+  .speciality-block{
+    font-family:var(--mono);
+    border:1px solid var(--line);padding:8px 14px;
+    background:rgba(255,255,255,.55);
+    display:flex;flex-direction:column;gap:5px;
+  }
+  .sp-row{display:flex;align-items:baseline;gap:10px}
+  .sp-row span{
+    font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--muted);flex-shrink:0;
+  }
+  .sp-row b{
+    font-family:var(--serif);font-size:14px;font-weight:600;color:var(--hi);
+  }
+
+  /* kiosk overrides for row-based */
+  body.kiosk .product-row{
+    padding:0;gap:0;
+    height:100%;
+    grid-template-rows:auto 1fr 1.5fr;
+  }
+  body.kiosk .product-row .head{padding:8px 14px}
+  body.kiosk .images-row{height:auto;min-height:0}
+  body.kiosk .images-row .vbox{padding:6px}
+  body.kiosk .specs-col{overflow:hidden}
+  body.kiosk .spec-grid-4{scrollbar-width:none}
+  body.kiosk .spec-grid-4::-webkit-scrollbar{display:none}
+  body.kiosk .spec-lbl{font-size:9px;padding:5px 8px}
+  body.kiosk .spec-val-cell{font-size:clamp(11px,1vw,14px);padding:5px 9px}
+  body.kiosk .spec-section-hdr{padding:5px 10px;font-size:9px}
+  body.kiosk .specs-col > h3{font-size:13px;padding:7px 12px}
+  body.kiosk .specs-col > .footer{padding:6px 12px;font-size:10px}
+
   /* ====== TABLET ≤ 1000px ====== */
   @media(max-width:1000px){
     .meta{display:none}
@@ -984,6 +1110,12 @@ function blobToDataURL(b){return new Promise(r => {const fr = new FileReader(); 
    Each block stretches until the next product or end of sheet. */
 function detectProducts(aoa, imageAnchors){
   const row0 = aoa[0] || [];
+
+  // Row-based format: row 0 col 0 is a "Model:" label (single product per sheet)
+  if(row0[0] && /^model\s*:/i.test(String(row0[0]).trim())){
+    return parseRowBasedProduct(aoa, imageAnchors);
+  }
+
   const heads = [];
   row0.forEach((v,i) => {
     if(v && String(v).trim()) heads.push({col:i, name:String(v).trim()});
@@ -1035,6 +1167,71 @@ function detectProducts(aoa, imageAnchors){
 
 function looksLikeNumber(s){return /^[\d.,\-]+$/.test(String(s).trim())}
 
+function parseRowBasedProduct(aoa, imageAnchors){
+  const name = aoa[0]?.[1] ? String(aoa[0][1]).trim() : 'Unknown';
+
+  function pickVal(row, fromCol){
+    for(let c = fromCol; c <= 13; c++){
+      if(row[c] != null && String(row[c]).trim()) return String(row[c]).trim();
+    }
+    return '';
+  }
+  const specialityAny  = pickVal(aoa[0]||[], 6);
+  const specialityCode = pickVal(aoa[1]||[], 6);
+  const specialityDesc = pickVal(aoa[2]||[], 6);
+
+  const techRow  = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase() === 'technical data'));
+  const dimRow   = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().startsWith('dimensional')));
+  const curveRow = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().includes('performance curve')));
+  const partsRow = aoa.findIndex(r => (r||[]).some(c => c && String(c).trim().toLowerCase().includes('parts list')));
+
+  // Parse spec rows between Technical Data header and Dimensional Details
+  const specRows = [];
+  const endRow = dimRow > -1 ? dimRow : aoa.length;
+
+  for(let r = techRow + 1; r < endRow; r++){
+    const row = aoa[r] || [];
+    const c0 = row[0] != null ? String(row[0]).trim() : '';
+    const c2 = row[2] != null ? String(row[2]).trim() : '';
+    const c4 = row[4] != null ? String(row[4]).trim() : '';
+    const c6 = row[6] != null ? String(row[6]).trim() : (row[7] != null ? String(row[7]).trim() : '');
+
+    if(!c0 && !c4) continue;
+    if(c0.startsWith('(') && !c4){
+      specRows.push({type:'note', text:c0});
+    } else if(c0 && !c2 && !c4){
+      specRows.push({type:'header', label:c0});
+    } else {
+      specRows.push({type:'spec', k:c0, v:c2, k2:c4, v2:c6});
+    }
+  }
+
+  // Flat specs list for compare feature
+  const specs = specRows.filter(r => r.type === 'spec').flatMap(r =>
+    [{k:r.k, v:r.v}, ...(r.k2 ? [{k:r.k2, v:r.v2}] : [])]
+  ).filter(s => s.k);
+
+  // Map images by their anchor row relative to section header rows
+  const preTech  = imageAnchors.filter(a => a.row < (techRow > -1 ? techRow : 15));
+  const logoImg  = preTech[0] || null;
+  const logoImg2 = preTech[1] || null;
+  const dimImg   = dimRow > -1   ? imageAnchors.find(a => a.row > dimRow   && a.row < (curveRow > -1 ? curveRow : dimRow   + 25)) : null;
+  const curveImg = curveRow > -1 ? imageAnchors.find(a => a.row > curveRow && a.row < (partsRow > -1 ? partsRow : curveRow + 25) && a !== dimImg) : null;
+  const partsImg = partsRow > -1 ? imageAnchors.find(a => a.row > partsRow && a !== dimImg && a !== curveImg) : null;
+
+  return [{
+    name,
+    format: 'row-based',
+    specialityAny, specialityCode, specialityDesc,
+    specRows, specs,
+    logo:  logoImg  ? logoImg.src  : null,
+    logo2: logoImg2 ? logoImg2.src : null,
+    dim:   dimImg   ? dimImg.src   : null,
+    curve: curveImg ? curveImg.src : null,
+    parts: partsImg ? partsImg.src : null
+  }];
+}
+
 /* ============================================================
    RENDER VIEWER
    ============================================================ */
@@ -1080,6 +1277,10 @@ function showViewer(){
 function renderProduct(){
   const p = state.products[state.active];
   const host = $('#productHost');
+  if(p.format === 'row-based'){
+    renderRowBasedProduct(p, host);
+    return;
+  }
   const ts = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const barLabel = $('#kioskBarLabel');
   if(barLabel) barLabel.innerHTML = `Interested in <b>${escapeHtml(p.name)}</b>?`;
@@ -1142,6 +1343,76 @@ function renderProduct(){
   `;
 }
 
+function renderRowBasedProduct(p, host){
+  const ts = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  const barLabel = $('#kioskBarLabel');
+  if(barLabel) barLabel.innerHTML = `Interested in <b>${escapeHtml(p.name)}</b>?`;
+
+  function imgBox(num, title, src){
+    return `
+      <div class="vbox">
+        <h4>
+          <span data-i18n>${escapeHtml(title)}</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            ${src ? `<button class="view-btn">View</button>` : ''}
+            <span>${num}</span>
+          </span>
+        </h4>
+        <div class="imgwrap">
+          ${src
+            ? `<img src="${src}" alt="${escapeHtml(title)}">`
+            : `<div class="empty" data-i18n>No image in file</div>`}
+        </div>
+      </div>`;
+  }
+
+  const specsHtml = p.specRows.map(row => {
+    if(row.type === 'header') return `<div class="spec-section-hdr" data-i18n>${escapeHtml(row.label)}</div>`;
+    if(row.type === 'note')   return `<div class="spec-note">${escapeHtml(row.text)}</div>`;
+    return `
+      <div class="spec-lbl" data-i18n>${escapeHtml(row.k)}</div>
+      <div class="spec-val-cell">${escapeHtml(row.v)}</div>
+      <div class="spec-lbl" data-i18n>${escapeHtml(row.k2||'')}</div>
+      <div class="spec-val-cell">${escapeHtml(row.v2||'')}</div>`;
+  }).join('');
+
+  host.innerHTML = `
+    <article class="product product-row">
+      <div class="head">
+        <div class="name">
+          <small data-i18n>Model</small>
+          ${escapeHtml(p.name)}
+        </div>
+        ${(p.specialityAny || p.specialityCode || p.specialityDesc) ? `
+        <div class="speciality-block">
+          ${p.specialityAny  ? `<div class="sp-row"><span data-i18n>Speciality</span><b>${escapeHtml(p.specialityAny)}</b></div>`  : ''}
+          ${p.specialityCode ? `<div class="sp-row"><span data-i18n>Special Code</span><b>${escapeHtml(p.specialityCode)}</b></div>` : ''}
+          ${p.specialityDesc ? `<div class="sp-row"><span data-i18n>Description</span><b>${escapeHtml(p.specialityDesc)}</b></div>`  : ''}
+        </div>` : ''}
+        <div class="badge" data-i18n>Spec Sheet</div>
+      </div>
+
+      <div class="images-row">
+        ${p.logo ? imgBox('', 'Product', p.logo) : ''}
+        ${p.logo2 ? imgBox('', 'Description of Speciality', p.logo2) : ''}
+        ${imgBox('01','Dimensional Details', p.dim)}
+        ${imgBox('02','HQ Performance Curve', p.curve)}
+        ${imgBox('03','Parts List — Cross Section', p.parts)}
+      </div>
+
+      <div class="specs-col">
+        <h3 data-i18n>Technical Data</h3>
+        <div class="spec-grid-4">${specsHtml}</div>
+        <div class="footer">
+          <div class="ts"><span data-i18n>Generated</span> · <b>${ts}</b></div>
+          <div class="ts"><span data-i18n>Source</span> · <b>${escapeHtml(p.source || state.fileNames[0] || '')}</b></div>
+          <button class="req-info-btn" id="reqInfoBtn">Request Info</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
 /* ============================================================
@@ -1170,7 +1441,7 @@ async function translateUI(lang){
   // collect all data-i18n nodes plus the .v value cells and .name product text and chip buttons
   const nodes = [];
   $$('[data-i18n]').forEach(n => nodes.push(n));
-  $$('.cell .v').forEach(n => nodes.push(n));
+  $$('.cell .v, .spec-val-cell').forEach(n => nodes.push(n));
   $$('.chip').forEach(n => nodes.push(n));
   $$('.head .name').forEach(n => {
     // only translate the product code text node — leave the small label alone (it has data-i18n already)
@@ -1198,7 +1469,7 @@ async function translateUI(lang){
     // For chip buttons, keep model code as-is
     if(n.classList && n.classList.contains('chip')) continue;
     // For value cells that are mostly numbers/units, also keep as is
-    if(n.classList && n.classList.contains('v') && /\d/.test(orig) && orig.length < 30){
+    if(n.classList && (n.classList.contains('v') || n.classList.contains('spec-val-cell')) && /\d/.test(orig) && orig.length < 30){
       // short numeric values — keep
       continue;
     }
@@ -1227,7 +1498,7 @@ function applyTrans(node, text){
 
 function restoreOriginal(){
   // walk every node we've cached and restore
-  $$('[data-i18n], .cell .v, .chip').forEach(n => {
+  $$('[data-i18n], .cell .v, .spec-val-cell, .chip').forEach(n => {
     if(state.origCache.has(n)){
       const orig = state.origCache.get(n);
       if(n.tagName === 'BUTTON' && orig.includes('<span class="dot"')){
