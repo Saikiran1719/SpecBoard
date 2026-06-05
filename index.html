@@ -1895,11 +1895,20 @@ $('#leadsClose').addEventListener('click', () => $('#leadsModal').classList.remo
 $('#leadsModal').addEventListener('click', e => { if(e.target === $('#leadsModal')) $('#leadsModal').classList.remove('open'); });
 
 $('#leadsClearAll').addEventListener('click', () => {
-  if(!confirm('Delete all ' + state.leads.length + ' leads? This cannot be undone.')) return;
-  state.leads = [];
-  localStorage.removeItem('sbLeads');
-  syncLeadsBtn();
-  renderLeadsTable();
+  const pin = localStorage.getItem('mmPin') || '';
+  function doClear(){
+    state.leads = [];
+    localStorage.removeItem('sbLeads');
+    syncLeadsBtn();
+    renderLeadsTable();
+    showToast('All leads cleared');
+  }
+  if(pin){
+    openPinGate(doClear);
+  } else {
+    if(!confirm('Delete all ' + state.leads.length + ' leads? This cannot be undone.')) return;
+    doClear();
+  }
 });
 
 $('#leadsExport').addEventListener('click', () => {
