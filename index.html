@@ -478,6 +478,44 @@
   body.kiosk .specs-col > h3{font-size:13px;padding:7px 12px}
   body.kiosk .specs-col > .footer{padding:6px 12px;font-size:10px}
 
+  /* ====== LIBRARY DROPDOWN ====== */
+  .lib-wrap{ position:relative }
+  .lib-panel{
+    display:none;flex-direction:column;
+    position:absolute;top:calc(100% + 8px);right:0;width:264px;
+    background:#fff;border:1px solid var(--ink);
+    box-shadow:6px 6px 0 var(--ink);z-index:300;
+  }
+  .lib-panel.open{ display:flex }
+  .lib-search{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    padding:10px 12px;border:none;border-bottom:1px solid var(--line);
+    outline:none;width:100%;box-sizing:border-box;background:var(--paper-2);
+  }
+  .lib-list{
+    overflow-y:auto;max-height:272px;
+    scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+  }
+  .lib-item{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 12px;cursor:pointer;
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    border-bottom:1px solid var(--line);user-select:none;
+  }
+  .lib-item:last-child{ border-bottom:none }
+  .lib-item:hover{ background:var(--paper-2) }
+  .lib-item input[type=checkbox]{ accent-color:var(--hi);flex-shrink:0;cursor:pointer }
+  .lib-empty{
+    padding:16px 12px;font-family:var(--mono);font-size:11px;
+    color:var(--muted);text-align:center;
+  }
+  .lib-actions{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 12px;border-top:1px solid var(--line);background:var(--paper-2);
+  }
+  .lib-count{ font-family:var(--mono);font-size:10px;color:var(--muted);flex:1 }
+  body.kiosk .lib-wrap{ display:none }
+
   /* ====== TABLET ≤ 1000px ====== */
   @media(max-width:1000px){
     .meta{display:none}
@@ -830,6 +868,18 @@
       <button class="btn" id="keyBtn">API Key</button>
       <button class="btn" id="kioskBtn" disabled>Kiosk</button>
       <button class="btn" id="printBtn" disabled>Print</button>
+      <div class="lib-wrap" id="libWrap">
+        <button class="btn" id="libBtn" disabled>Library ▾</button>
+        <div class="lib-panel" id="libPanel">
+          <input class="lib-search" id="libSearch" placeholder="Search products…" type="text" autocomplete="off">
+          <div class="lib-list" id="libList"></div>
+          <div class="lib-actions">
+            <span class="lib-count" id="libCount">0 selected</span>
+            <button class="btn" id="libSelAll">All</button>
+            <button class="btn primary" id="libLoad">Load</button>
+          </div>
+        </div>
+      </div>
       <button class="btn primary" id="newBtn" disabled>New File</button>
     </div>
   </div>
@@ -1873,6 +1923,97 @@ function openPinGate(callback){
   $('#pinModal').classList.add('open');
   setTimeout(() => pinInput.focus(), 80);
 }
+
+/* ============================================================
+   LIBRARY — fetch /specs/manifest.json and populate header dropdown
+   ============================================================ */
+(function(){
+  let manifest = [];
+
+  // Try to load manifest; button stays disabled if none found
+  fetch('/specs/manifest.json')
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => {
+      manifest = Array.isArray(data) ? data : [];
+      if(manifest.length){
+        $('#libBtn').disabled = false;
+        renderList(manifest);
+      }
+    })
+    .catch(() => {});
+
+  function renderList(items){
+    if(!items.length){
+      $('#libList').innerHTML = '<div class="lib-empty">No matches</div>';
+      updateCount(); return;
+    }
+    $('#libList').innerHTML = items.map(m =>
+      `<label class="lib-item">
+         <input type="checkbox" data-file="${escapeHtml(m.file)}" data-name="${escapeHtml(m.name)}">
+         <span>${escapeHtml(m.name)}</span>
+       </label>`
+    ).join('');
+    updateCount();
+  }
+
+  function updateCount(){
+    const n = $$('#libList input:checked').length;
+    $('#libCount').textContent = n ? `${n} selected` : '0 selected';
+  }
+
+  // Toggle panel
+  $('#libBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const open = $('#libPanel').classList.toggle('open');
+    if(open){ $('#libSearch').focus(); $('#libSearch').select(); }
+  });
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if(!$('#libWrap').contains(e.target)) $('#libPanel').classList.remove('open');
+  });
+
+  // Live search filter
+  $('#libSearch').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    renderList(q ? manifest.filter(m => m.name.toLowerCase().includes(q)) : manifest);
+  });
+
+  // Checkbox changes → update count
+  $('#libList').addEventListener('change', updateCount);
+
+  // Select All / Deselect All toggle
+  $('#libSelAll').addEventListener('click', () => {
+    const boxes = [...$$('#libList input[type=checkbox]')];
+    const allOn = boxes.length && boxes.every(b => b.checked);
+    boxes.forEach(b => b.checked = !allOn);
+    updateCount();
+  });
+
+  // Load selected files from /specs/
+  $('#libLoad').addEventListener('click', async () => {
+    const checked = [...$$('#libList input:checked')];
+    if(!checked.length) return;
+    $('#libPanel').classList.remove('open');
+    const btn = $('#libLoad');
+    btn.disabled = true; btn.textContent = 'Loading…';
+
+    const files = [];
+    for(const cb of checked){
+      try{
+        const res = await fetch('/specs/' + cb.dataset.file);
+        if(!res.ok) throw new Error(res.status);
+        const buf = await res.arrayBuffer();
+        files.push(new File([buf], cb.dataset.file));
+      }catch(err){
+        console.error('Library: could not fetch', cb.dataset.file, err);
+      }
+    }
+
+    btn.disabled = false; btn.textContent = 'Load';
+    if(files.length) handleFiles(files);
+  });
+})();
 
 /* ============================================================
    KIOSK MODE
