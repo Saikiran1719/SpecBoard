@@ -704,9 +704,123 @@
   .leads-tbl tr:hover td{background:rgba(255,91,31,.04)}
   .no-leads{padding:40px;text-align:center;color:var(--muted);font-style:italic;font-family:var(--serif);font-size:17px}
 
+  /* ====== PRINT VIEW (screen: hidden) ====== */
+  #printView{ display:none }
+  @page{ size:A4 landscape; margin:7mm 8mm }
+
   @media print{
-    header,.slicer{display:none}
-    .product{box-shadow:none;break-inside:avoid}
+    /* hide all chrome */
+    header,.slicer,.cmp-bar,.translating,
+    #pinModal,#keyModal,#leadsModal,#compareModal,
+    #leadForm,#kioskBar,.kiosk-exit,
+    #viewer,#drop{ display:none !important }
+    body{ background:#fff !important; margin:0; padding:0 }
+    #printView{ display:block !important }
+
+    /* ---- page: no min-height so content drives height ---- */
+    .pv-page{
+      page-break-after:always;
+      font-family:'Poppins',sans-serif;
+      color:#0d1117;width:100%;
+      display:flex;flex-direction:column;
+      box-sizing:border-box;
+    }
+    .pv-page:last-child{ page-break-after:avoid }
+
+    /* ---- header bar ---- */
+    .pv-header{
+      display:flex;align-items:center;
+      justify-content:space-between;
+      border-bottom:2pt solid #0d1117;
+      padding-bottom:2mm;margin-bottom:2mm;
+    }
+    .pv-brand{
+      font-size:7pt;font-weight:700;letter-spacing:.28em;
+      text-transform:uppercase;color:#f45b1e;
+    }
+    .pv-model{
+      font-size:17pt;font-weight:700;letter-spacing:.04em;
+      text-align:center;flex:1;padding:0 6mm;
+    }
+    .pv-date{
+      font-size:7pt;color:#6e6a5b;
+      letter-spacing:.06em;white-space:nowrap;
+    }
+
+    /* ---- speciality row ---- */
+    .pv-speciality{
+      display:flex;gap:16pt;font-size:7.5pt;
+      padding:1.5mm 2.5mm;margin-bottom:2mm;
+      background:#fdf8f2;border:1pt solid #e8d5c0;
+    }
+
+    /* ---- images strip: 40mm keeps content compact ---- */
+    .pv-images{
+      display:flex;gap:1.5mm;margin-bottom:2.5mm;
+      height:40mm;flex-shrink:0;
+    }
+    .pv-img-box{
+      flex:1;border:1pt solid #d8d4cb;
+      display:flex;flex-direction:column;overflow:hidden;
+    }
+    .pv-img-title{
+      font-size:5pt;letter-spacing:.12em;text-transform:uppercase;
+      font-weight:700;color:#0d1117;
+      padding:1mm 2mm;border-bottom:1pt solid #d8d4cb;
+      background:#f5f3ee;white-space:nowrap;overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .pv-img-inner{
+      flex:1;display:flex;align-items:center;justify-content:center;
+      padding:1.5mm;overflow:hidden;background:#fff;
+    }
+    .pv-img-inner img{
+      max-width:100%;max-height:100%;object-fit:contain;
+    }
+    .pv-img-empty{
+      font-size:6pt;color:#bbb;font-style:italic;
+    }
+    .pv-desc-text{
+      font-size:6pt;line-height:1.55;color:#f45b1e;
+      white-space:pre-line;overflow:hidden;
+    }
+
+    /* ---- technical data ---- */
+    .pv-tech-label{
+      font-size:6pt;font-weight:700;letter-spacing:.2em;
+      text-transform:uppercase;
+      padding:1mm 0;margin-bottom:1.5mm;
+      border-bottom:1.5pt solid #0d1117;
+    }
+    .pv-tech-table{
+      width:100%;border-collapse:collapse;font-size:7pt;
+      line-height:1.2;
+    }
+    .pv-tech-table td{
+      padding:.9mm 2.5mm;border:1pt solid #e0ddd4;vertical-align:middle;
+    }
+    .pv-tech-table .pk{
+      background:#f5f3ee;font-weight:600;width:22%;
+    }
+    .pv-tech-table .pval{
+      width:6%;color:#0d1117;
+    }
+    .pv-tech-table .phdr{
+      background:#0d1117;color:#fff;font-weight:700;
+      letter-spacing:.12em;font-size:6pt;
+      text-transform:uppercase;padding:1.2mm 2.5mm;
+    }
+    .pv-tech-table .pnote{
+      color:#6e6a5b;font-style:italic;font-size:6pt;
+    }
+
+    /* ---- footer ---- */
+    .pv-footer{
+      display:flex;justify-content:space-between;
+      font-size:6pt;color:#9e9a8e;
+      border-top:1pt solid #d8d4cb;
+      padding-top:1.5mm;margin-top:2mm;letter-spacing:.05em;
+    }
   }
 
   /* ====== KIOSK MODE ====== */
@@ -1008,6 +1122,9 @@
   </div>
 </div>
 
+<!-- PRINT VIEW (hidden on screen, shown only during print) -->
+<div id="printView"></div>
+
 <!-- COMPARE MODAL -->
 <div id="compareModal">
   <div class="cmp-top">
@@ -1076,7 +1193,84 @@ $('#newBtn').addEventListener('click', () => {
   $('#leadsBtn').style.display = 'none';
 });
 
-$('#printBtn').addEventListener('click', () => window.print());
+$('#printBtn').addEventListener('click', () => {
+  buildPrintView();
+  setTimeout(() => window.print(), 80);
+});
+
+function buildPrintView(){
+  const prods = state.products;
+  if(!prods.length) return;
+  const ts = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+  function pImgBox(label, num, src){
+    const numTag = num ? `<span style="opacity:.45;margin-left:2pt">${num}</span>` : '';
+    return `<div class="pv-img-box">
+      <div class="pv-img-title">${escapeHtml(label)}${numTag}</div>
+      <div class="pv-img-inner">
+        ${src
+          ? `<img src="${src}" alt="${escapeHtml(label)}">`
+          : `<span class="pv-img-empty">No image in file</span>`}
+      </div>
+    </div>`;
+  }
+
+  function buildPage(p){
+    const specInfo = (p.specialityAny || p.specialityCode) ? `
+      <div class="pv-speciality">
+        ${p.specialityAny  ? `<span><b>Speciality:</b> ${escapeHtml(p.specialityAny)}</span>`  : ''}
+        ${p.specialityCode ? `<span><b>Special Code:</b> ${escapeHtml(p.specialityCode)}</span>` : ''}
+      </div>` : '';
+
+    const descBox = p.logo2
+      ? pImgBox('Description of Speciality', '', p.logo2)
+      : p.specialityDesc
+        ? `<div class="pv-img-box">
+            <div class="pv-img-title">Description of Speciality</div>
+            <div class="pv-img-inner">
+              <div class="pv-desc-text">${escapeHtml(p.specialityDesc)}</div>
+            </div>
+           </div>`
+        : '';
+
+    const images = `
+      ${p.logo ? pImgBox('Product','',p.logo) : ''}
+      ${descBox}
+      ${pImgBox('Dimensional Details','01',p.dim)}
+      ${pImgBox('HQ Performance Curve','02',p.curve)}
+      ${pImgBox('Parts List — Cross Section','03',p.parts)}`;
+
+    const tableRows = (p.specRows||[]).map(row => {
+      if(row.type==='header') return `<tr><td class="phdr" colspan="4">${escapeHtml(row.label)}</td></tr>`;
+      if(row.type==='note')   return `<tr><td class="pnote" colspan="4">${escapeHtml(row.text)}</td></tr>`;
+      return `<tr>
+        <td class="pk">${escapeHtml(row.k)}</td>
+        <td class="pval">${escapeHtml(row.v)}</td>
+        <td class="pk">${escapeHtml(row.k2||'')}</td>
+        <td class="pval">${escapeHtml(row.v2||'')}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="pv-page">
+      <div class="pv-header">
+        <div class="pv-brand">SpecBoard</div>
+        <div class="pv-model">${escapeHtml(p.name)}</div>
+        <div class="pv-date">${ts}</div>
+      </div>
+      ${specInfo}
+      <div class="pv-images">${images}</div>
+      <div class="pv-tech-label">Technical Data</div>
+      <table class="pv-tech-table">${tableRows}</table>
+      <div class="pv-footer">
+        <span>SpecBoard</span>
+        <span>${escapeHtml(p.source||state.fileNames[0]||'')}</span>
+        <span>Printed ${ts}</span>
+      </div>
+    </div>`;
+  }
+
+  $('#printView').innerHTML = prods.map(buildPage).join('');
+}
 
 /* ============================================================
    PARSE .xlsx  (supports multiple files)
